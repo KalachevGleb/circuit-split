@@ -3,6 +3,7 @@
 #include <string>
 #include <vector> 
 #include <thread>
+#include <chrono>
 
 #include <ctime>
 #include <cstdlib>
@@ -140,7 +141,7 @@ int main() {
         }
     }
 
-    vector<clock_t> results;
+    vector<long> results;
 
     for(int run = 0; run < RUN_COUNT; ++run) {
         
@@ -167,7 +168,7 @@ int main() {
             start_sema_1.wait();
         }
 
-        auto start = clock();
+        auto start = std::chrono::high_resolution_clock::now();
         
         for(int t = 0; t < thread_count; ++t) {
             start_sema_2.signal();
@@ -177,9 +178,9 @@ int main() {
             thread_pool[t] -> join();
         }
 
-        auto stop = clock();
+        auto stop = std::chrono::high_resolution_clock::now();
 
-        results.push_back(stop - start);
+        results.push_back(chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
 
         for(int t = 0; t < thread_count; ++t) {
             delete thread_pool[t];
@@ -199,7 +200,7 @@ int main() {
     long sum = 0;
     for(int i = 0; i < RUN_COUNT; ++i) sum = sum + results[i];
 
-    printf("Mean time: %3.4lfs, mean ticks: %u\n", static_cast<double>(sum) / (RUN_COUNT * CLOCKS_PER_SEC), static_cast<unsigned int>(sum / RUN_COUNT));
+    printf("Mean time: %3.1lfms\n", static_cast<double>(sum) / RUN_COUNT);
 
     return 0;
 }
