@@ -17,17 +17,38 @@ const char input_path[] = "cut.txt";
 const int RUN_COUNT = 50;
 
 /* TODO
-Использовать std::chrono::high_resolution_clock()
-Убрать лишний вывод в консоль
 Комментарии
+*/
+
+/*
+Этот класс - представление строки из целых чисел, описывающее
+    очередную вершину из обхода графа, сгенерированного gen.py
+
+Оно устроено следующим образом:
+
+номер потока
+номер вершины, должен совпадать с номером строки, он здесь для
+    удобства
+вес вершины
+последовательность вершин, от которых зависит данная, а именно
+    если родитель лежит в том же потоке, что и текущая вершина,
+        то указывается его номер вершины, т.е. номер его
+        строки
+    если родитель и текущая вершина лежат в разных потоках,
+        то указывается минус номер вершины родителя
+        минус один
+    то есть это число однозначно кодирует информацию о
+        типе зависимости относительно потока
+        (внешняя/внутренняя) и о номере родителя
 */
 
 struct Line {
     int thread;
     int index;
     int weight;
-    vector<int> forward_deps, sync_deps;
+    vector<int> forward_deps, sync_deps;            //Родители из текущего потока и родители из другого потока соответственно
 
+    // Конструктор из строки cut.txt
     Line(string args) {
         auto contents = split_string(args);
 
@@ -47,31 +68,31 @@ private:
     Line() = delete;
 };
 
-void worker(const vector<Line*> lines,
-            const vector<Semaphore*> Semaphores,
-            const int thread,
-            const Semaphore* start_sema_1,
-            const Semaphore* start_sema_2,
-            const vector<int> queue_size) {
+void worker(const vector<Line*> lines,              //Весь "код" из cut.txt
+            const vector<Semaphore*> Semaphores,    //Семафоры для синхронизиции потоков или nullptr если результат вершины используется только в ее потоке
+            const int thread,                       //Номер потока этого воркера
+            const Semaphore* start_sema_1,          //Два семафора, отвечающие за
+            const Semaphore* start_sema_2,          //  (почти) синхронный старт воркеров
+            const vector<int> queue_size) {         //Число вершин из отличного от thread потока, желающих получить доступ к текущей вершине
 
-    auto line_queue = vector<Line*>();
+    auto line_queue = vector<Line*>();              //Выделяем только те вершины, которые обрабатываются текущим потоком
     for(auto line_ptr: lines)  {
         if(line_ptr -> thread == thread) {
             line_queue.push_back(line_ptr);
         }
     }
 
-    volatile int x = rand();
+    volatile int x = rand();                        //Присваивание этих переменных симулирует передачу данных между вершинами
     volatile int y = rand();
 
-    start_sema_1 -> signal();
+    start_sema_1 -> signal();                       //Гарантия "одновременного" старта
     start_sema_2 -> wait();
 
     int queue_len = line_queue.size();
-    for(int line_iter = 0; line_iter < queue_len; ++line_iter) {
+    for(int line_iter = 0; line_iter < queue_len; ++line_iter) {    //Большой кусок кода про последовалельную симуляцию работы вершин ТОЛЬКО текущего потока
         auto line_ptr = line_queue[line_iter];
 
-        int len_dep = (line_ptr -> sync_deps).size();
+        int len_dep = (line_ptr -> sync_deps).size();               //Обрабатываем зависимости между потоками
         for(int dep_iter = 0; dep_iter < len_dep; ++dep_iter) {
             int dep = (line_ptr -> sync_deps)[dep_iter];
 
@@ -84,7 +105,7 @@ void worker(const vector<Line*> lines,
             }
         }
         
-        len_dep = (line_ptr -> forward_deps).size();
+        len_dep = (line_ptr -> forward_deps).size();                //Обрабатываем зависимости внутри потока
         for(int dep_iter = 0; dep_iter < len_dep; ++dep_iter) {
             int dep = (line_ptr -> forward_deps)[dep_iter];
 
@@ -95,8 +116,13 @@ void worker(const vector<Line*> lines,
             }
         }
 
-        int q = queue_size[line_ptr -> index];
+        int q = queue_size[line_ptr -> index];                      //Говорим всем, что мы посчитали свое значение и другим потокам можно его читать
         if(q > 0) {
+            for(int i = 0; i < q; ++i) {
+                y = x;
+                x = y;
+            }
+
             Semaphores[line_ptr -> index] -> signal(q);
         }
     }
@@ -144,8 +170,6 @@ int main() {
     vector<long> results;
 
     for(int run = 0; run < RUN_COUNT; ++run) {
-        
-
         auto Semaphores = vector<Semaphore*>();
         for(auto q: queue_size) {
             if(q > 0) {
