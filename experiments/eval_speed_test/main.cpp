@@ -15,8 +15,6 @@ const char input_path[] = "cut.txt";
 const int RUN_COUNT = 50;
 
 /* TODO
-Сделать дебаговый код макросами
-Разделить код на файлы, сделать заголовочный файл
 Комментарии
 */
 
@@ -69,8 +67,6 @@ void worker(const vector<Line*> lines,
             const Semaphore* start_sema_2,
             const vector<int> queue_size) {
 
-    const int CHECK_THREAD = -1;
-
     auto line_queue = vector<Line*>();
     for(auto line_ptr: lines)  {
         if(line_ptr -> thread == thread) {
@@ -81,22 +77,12 @@ void worker(const vector<Line*> lines,
     int x = rand();
     int y = rand();
 
-    int DEBUG_COUNTER = 0;
-
     start_sema_1 -> signal();
     start_sema_2 -> wait();
 
     int queue_len = line_queue.size();
     for(int line_iter = 0; line_iter < queue_len; ++line_iter) {
         auto line_ptr = line_queue[line_iter];
-       
-        if(thread == CHECK_THREAD) {
-            cout << endl;
-            cout << line_ptr -> thread << ' ' << line_ptr -> index << ' ' << line_ptr -> weight;
-            for(int i = 0; i < (line_ptr -> sync_deps).size(); ++i) cout << ' ' << (line_ptr -> sync_deps)[i];
-            for(int i = 0; i < (line_ptr -> forward_deps).size(); ++i) cout << ' ' << (line_ptr -> forward_deps)[i];
-            cout << endl;
-        } 
 
         int len_dep = (line_ptr -> sync_deps).size();
         for(int dep_iter = 0; dep_iter < len_dep; ++dep_iter) {
@@ -107,14 +93,7 @@ void worker(const vector<Line*> lines,
             for(int i = 0; i < lines[dep] -> weight; ++i) {
                 y = x;
                 x = y;
-            
-                if(thread == CHECK_THREAD) ++DEBUG_COUNTER;
             }
-        }
-
-        if(thread == CHECK_THREAD) {
-            cout << "Sync counter: " << DEBUG_COUNTER << endl;
-            DEBUG_COUNTER = 0;
         }
         
         len_dep = (line_ptr -> forward_deps).size();
@@ -124,20 +103,11 @@ void worker(const vector<Line*> lines,
             for(int i = 0; i < lines[dep] -> weight; ++i) {
                 y = x;
                 x = y;
-
-                if(thread == CHECK_THREAD) ++DEBUG_COUNTER;
             }
-        }
-
-        if(thread == CHECK_THREAD) {
-            cout << "Forward counter: " << DEBUG_COUNTER << endl;
-            DEBUG_COUNTER = 0;
         }
 
         int q = queue_size[line_ptr -> index];
         if(q > 0) {
-            if(thread == CHECK_THREAD) cout << "Opening gate" << endl;
-
             Semaphores[line_ptr -> index] -> signal(q);
         }
     }
