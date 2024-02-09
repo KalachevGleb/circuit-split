@@ -60,8 +60,8 @@ void worker(const vector<Line*> lines,
         }
     }
 
-    int x = rand();
-    int y = rand();
+    volatile int x = rand();
+    volatile int y = rand();
 
     start_sema_1 -> signal();
     start_sema_2 -> wait();
@@ -76,7 +76,8 @@ void worker(const vector<Line*> lines,
 
             Semaphores[dep] -> wait();
 
-            for(int i = 0; i < lines[dep] -> weight; ++i) {
+            int I = lines[dep] -> weight;
+            for(int i = 0; i < I; ++i) {
                 y = x;
                 x = y;
             }
@@ -86,7 +87,8 @@ void worker(const vector<Line*> lines,
         for(int dep_iter = 0; dep_iter < len_dep; ++dep_iter) {
             int dep = (line_ptr -> forward_deps)[dep_iter];
 
-            for(int i = 0; i < lines[dep] -> weight; ++i) {
+            int I = lines[dep] -> weight;
+            for(int i = 0; i < I; ++i) {
                 y = x;
                 x = y;
             }
@@ -97,8 +99,6 @@ void worker(const vector<Line*> lines,
             Semaphores[line_ptr -> index] -> signal(q);
         }
     }
-
-    printf("Trash: %d %d\n", x, y);
 
     return;
 }
