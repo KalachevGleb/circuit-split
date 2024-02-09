@@ -81,6 +81,10 @@ def main():
 
     fd = open('cut.txt', 'w')
 
+    vertex_id2turn = [None for _ in range(len(turn2vertex_id))]
+    for i in range(len(turn2vertex_id)):
+        vertex_id2turn[turn2vertex_id[i]] = i
+
     for vertex_id in tqdm(turn2vertex_id):
 
         vertex = graph.vs[vertex_id]
@@ -88,7 +92,7 @@ def main():
 
         fd.write(str(vertex['p']))
         fd.write(' ')
-        fd.write(str(vertex.index))
+        fd.write(str(vertex_id2turn[vertex_id]))
         fd.write(' ')
         fd.write(str(vertex['w']))
 
@@ -97,9 +101,9 @@ def main():
             fd.write(' ')
 
             if parent['p'] != vertex['p']:
-                fd.write(str(-parent.index - 1))
+                fd.write(str(-vertex_id2turn[parent.index] - 1))
             else:
-                fd.write(str(parent.index))
+                fd.write(str(vertex_id2turn[parent.index]))
 
         fd.write('\n')
 
