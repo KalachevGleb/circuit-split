@@ -8,6 +8,7 @@
 #include <cstdlib>
 
 #include "semaphore.hpp"
+#include "common.hpp"
 
 using namespace std;
 
@@ -15,26 +16,10 @@ const char input_path[] = "cut.txt";
 const int RUN_COUNT = 50;
 
 /* TODO
+Использовать std::chrono::high_resolution_clock()
+Убрать лишний вывод в консоль
 Комментарии
 */
-
-vector<int> split_string(string str) {
-    vector<int> ret;
-
-    for(int i = 0; i < str.size(); ++i) {
-        while(i < str.size() && isspace(str[i])) ++i;
-        if(i == str.size()) break;
-
-        string s;
-        while(i < str.size() && !isspace(str[i])) {
-            s+= str[i];
-            ++i;
-        }
-        ret.push_back(stoi(s));
-    }
-
-    return ret;
-}
 
 struct Line {
     int thread;
@@ -56,6 +41,7 @@ struct Line {
             }
         }
     }
+
 private:
     Line() = delete;
 };
