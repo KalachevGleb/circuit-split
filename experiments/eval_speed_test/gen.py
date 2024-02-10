@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 filename = 'dep_graph-600K.json'
 
 LOSS = 100000
-THREAD_COUNT = 4
+THREAD_COUNT = 2 if len(sys.argv) == 2 else int(sys.argv[1])
 
 def main():
     print()
