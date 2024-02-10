@@ -15,6 +15,8 @@ filename = 'dep_graph-600K.json'
 THREAD_COUNT = 2 if len(sys.argv) == 1 else int(sys.argv[1])
 LOSS = 100000 if len(sys.argv) == 1 else int(sys.argv[2])
 
+IN_SCRIPT = True
+
 def main():
     print()
     print('Reading...')
@@ -76,6 +78,9 @@ def main():
     cost_greedy = time_per_thread
     print('Cost per thread:', cost_greedy)
     print('Overhead:', str(sum(cost_greedy) - np.sum(graph.vs['w'])) + ',', str(round(100 * (sum(cost_greedy) / single_thread_time - 1), 3)) + '%')
+
+    if IN_SCRIPT:
+        print('timeperthread', max(cost_greedy))
 
     print('Creating dump')                                                  
 
