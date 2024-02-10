@@ -223,7 +223,11 @@ int main_routine() {
     long sum = 0;
     for(int i = 0; i < RUN_COUNT; ++i) sum = sum + results[i];
 
+    #ifdef IN_SCRIPT
+    printf( "result %3.1lf\n", static_cast<double>(sum) / RUN_COUNT);
+    #else
     printf("Mean time: %3.1lfms\n", static_cast<double>(sum) / RUN_COUNT);
+    #endif
 
     return 0;
 }
