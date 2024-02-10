@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 filename = 'dep_graph-600K.json'
 
 LOSS = 100000
-THREAD_COUNT = 2 if len(sys.argv) == 2 else int(sys.argv[1])
+THREAD_COUNT = 2 if len(sys.argv) == 1 else int(sys.argv[1])
 
 def main():
     print()
@@ -77,16 +77,16 @@ def main():
     print('Cost per thread:', cost_greedy)
     print('Overhead:', str(sum(cost_greedy) - np.sum(graph.vs['w'])) + ',', str(round(100 * (sum(cost_greedy) / single_thread_time - 1), 3)) + '%')
 
-    print('Creating dump')
+    print('Creating dump')                                                  
 
-    fd = open('cut.txt', 'w')
+    fd = open('cut.txt', 'w')                                                   #См структуру Line в main.cpp
 
-    vertex_id2turn = [None for _ in range(len(turn2vertex_id))]
-    for i in range(len(turn2vertex_id)):
+    vertex_id2turn = [None for _ in range(len(turn2vertex_id))]                 #Строим отображение id вершны в ее место по очереди в топологической сортировке
+    for i in range(len(turn2vertex_id)):                                        #   то есть обратное к turn2vertex_id
         vertex_id2turn[turn2vertex_id[i]] = i
 
-    for vertex_id in tqdm(turn2vertex_id):
-
+    for vertex_id in tqdm(turn2vertex_id):                                      #Последовательно дампим расписание в cut.txt в соотвествии с правилом, описанным
+                                                                                #   в комментарии к структуре Line в main.cpp
         vertex = graph.vs[vertex_id]
         parents = vertex.neighbors(mode='in')
 
