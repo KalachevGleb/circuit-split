@@ -13,11 +13,10 @@
 
 using namespace std;
 
-const char input_path[] = "cut.txt";
-const int RUN_COUNT = 50;
+const char input_path[] = "cut.txt";                    //См описание структуры Line
+const int RUN_COUNT = 2000;                               //Число запусков теста. Программа выводит среднее время работы теста в миллисекундах
 
 /* TODO
-Комментарии
 */
 
 /*
@@ -130,8 +129,8 @@ void worker(const vector<Line*> lines,              //Весь "код" из cut
     return;
 }
 
-int main() {
-    printf("Reading\n");
+int main_routine() {                                                        
+    printf("Reading\n");                                            //Чтение из cut.txt
 
     ifstream fd;
     fd.open(input_path, ios_base::in);
@@ -142,7 +141,7 @@ int main() {
         while (fd) {
             getline(fd, read_buff);
 
-            if(split_string(read_buff).size() == 0) continue;
+            if(split_string(read_buff).size() == 0) continue;       
 
             lines.push_back(new Line(read_buff));
         }
@@ -152,25 +151,25 @@ int main() {
 
     printf("%lu lines read\n", lines.size());
 
-    int max_thread = -1;
+    int max_thread = -1;                                                                    //Вычисляем реальное число потоков, т.к. gen.py может не использовать часть из них
     for(auto line_ptr: lines) {
         if(line_ptr -> thread > max_thread) max_thread = line_ptr -> thread;
     }
     int thread_count = max_thread + 1;
 
-    printf("Thread count: %d\n", thread_count);
+    printf("Thread count: %d\n", thread_count);                                             
 
-    vector<int> queue_size(lines.size(), 0);
+    vector<int> queue_size(lines.size(), 0);                                                //Массив, определяющий число вешнин из других потоков, зависящих от данной
     for(auto line_ptr: lines) {
         for(auto dep: line_ptr -> sync_deps) {
                 ++queue_size[dep];
         }
     }
 
-    vector<long> results;
+    vector<long> results;                                                                   //Результаты тестирования в миллисекундах
 
-    for(int run = 0; run < RUN_COUNT; ++run) {
-        auto Semaphores = vector<Semaphore*>();
+    for(int run = 0; run < RUN_COUNT; ++run) {                                              //Основной цикл, см RUN_COUNT
+        auto Semaphores = vector<Semaphore*>();                                             //Семафоры или nullptr для синхронизации между потоками
         for(auto q: queue_size) {
             if(q > 0) {
                 Semaphores.push_back(new Semaphore);
@@ -180,9 +179,9 @@ int main() {
             }
         }
 
-        vector<thread*> thread_pool(thread_count, nullptr);
-        Semaphore start_sema_1(thread_count);
-        Semaphore start_sema_2(thread_count);
+        vector<thread*> thread_pool(thread_count, nullptr);                                 
+        Semaphore start_sema_1(thread_count);                                               //Семафоры для (почти) одновременного заппуска основной нагрузки потоков
+        Semaphore start_sema_2(thread_count);                                               //  после выполнения их подготовки
 
         for(int t = 0; t < thread_count; ++t) {
             thread_pool[t] = new thread(worker, lines, Semaphores, t, &start_sema_1, &start_sema_2, queue_size);
@@ -227,4 +226,8 @@ int main() {
     printf("Mean time: %3.1lfms\n", static_cast<double>(sum) / RUN_COUNT);
 
     return 0;
+}
+
+int main() {
+    return main_routine();
 }
