@@ -14,7 +14,7 @@
 using namespace std;
 
 const char input_path[] = "cut.txt";                    //См описание структуры Line
-const int RUN_COUNT = 2000;                               //Число запусков теста. Программа выводит среднее время работы теста в миллисекундах
+const int RUN_COUNT = 10;                               //Число запусков теста. Программа выводит среднее время работы теста в миллисекундах
 
 /* TODO
 */
@@ -45,6 +45,7 @@ struct Line {
     int thread;
     int index;
     int weight;
+    mutable vector<uint32_t> data;
     vector<int> forward_deps, sync_deps;            //Родители из текущего потока и родители из другого потока соответственно
 
     // Конструктор из строки cut.txt
@@ -61,28 +62,28 @@ struct Line {
                 else forward_deps.push_back(dep);
             }
         }
+
+        data.resize(max(1, weight));
     }
 
 private:
     Line() = delete;
+    Line(const Line&) = delete;
 };
 
-void worker(const vector<Line*> lines,              //Весь "код" из cut.txt
-            const vector<Semaphore*> Semaphores,    //Семафоры для синхронизиции потоков или nullptr если результат вершины используется только в ее потоке
-            const int thread,                       //Номер потока этого воркера
-            const Semaphore* start_sema_1,          //Два семафора, отвечающие за
-            const Semaphore* start_sema_2,          //  (почти) синхронный старт воркеров
-            const vector<int> queue_size) {         //Число вершин из отличного от thread потока, желающих получить доступ к текущей вершине
+void worker(vector<const Line*> lines,              //Весь "код" из cut.txt
+            vector<const Semaphore*> Semaphores,    //Семафоры для синхронизиции потоков или nullptr если результат вершины используется только в ее потоке
+            int thread,                       //Номер потока этого воркера
+            Semaphore* start_sema_1,          //Два семафора, отвечающие за
+            Semaphore* start_sema_2,          //  (почти) синхронный старт воркеров
+            vector<int> queue_size) {         //Число вершин из отличного от thread потока, желающих получить доступ к текущей вершине
 
-    auto line_queue = vector<Line*>();              //Выделяем только те вершины, которые обрабатываются текущим потоком
+    auto line_queue = vector<const Line*>();              //Выделяем только те вершины, которые обрабатываются текущим потоком
     for(auto line_ptr: lines)  {
         if(line_ptr -> thread == thread) {
             line_queue.push_back(line_ptr);
         }
     }
-
-    volatile int x = rand();                        //Присваивание этих переменных симулирует передачу данных между вершинами
-    volatile int y = rand();
 
     start_sema_1 -> signal();                       //Гарантия "одновременного" старта
     start_sema_2 -> wait();
@@ -97,10 +98,13 @@ void worker(const vector<Line*> lines,              //Весь "код" из cut
 
             Semaphores[dep] -> wait();
 
-            int I = lines[dep] -> weight;
-            for(int i = 0; i < I; ++i) {
-                y = x;
-                x = y;
+            int data_pos = 0;
+            for(size_t i = 0; i < lines[dep] -> data.size(); ++i, ++data_pos) {
+                if(data_pos >= line_ptr -> weight) {
+                    data_pos = 0;
+                }
+
+                line_ptr -> data[data_pos] += lines[dep] -> data[i];
             }
         }
         
@@ -108,20 +112,18 @@ void worker(const vector<Line*> lines,              //Весь "код" из cut
         for(int dep_iter = 0; dep_iter < len_dep; ++dep_iter) {
             int dep = (line_ptr -> forward_deps)[dep_iter];
 
-            int I = lines[dep] -> weight;
-            for(int i = 0; i < I; ++i) {
-                y = x;
-                x = y;
+            int data_pos = 0;
+            for(size_t i = 0; i < lines[dep] -> data.size(); ++i, ++data_pos) {
+                if(data_pos >= line_ptr -> weight) {
+                    data_pos = 0;
+                }
+
+                line_ptr -> data[data_pos] += lines[dep] -> data[i];
             }
         }
 
         int q = queue_size[line_ptr -> index];                      //Говорим всем, что мы посчитали свое значение и другим потокам можно его читать
         if(q > 0) {
-            for(int i = 0; i < q; ++i) {
-                y = x;
-                x = y;
-            }
-
             Semaphores[line_ptr -> index] -> signal(q);
         }
     }
@@ -136,7 +138,7 @@ int main_routine() {
     fd.open(input_path, ios_base::in);
 
     string read_buff;
-    vector<Line*> lines;
+    vector<const Line*> lines;
     if (fd.is_open()) {
         while (fd) {
             getline(fd, read_buff);
@@ -169,7 +171,7 @@ int main_routine() {
     vector<long> results;                                                                   //Результаты тестирования в миллисекундах
 
     for(int run = 0; run < RUN_COUNT; ++run) {                                              //Основной цикл, см RUN_COUNT
-        auto Semaphores = vector<Semaphore*>();                                             //Семафоры или nullptr для синхронизации между потоками
+        auto Semaphores = vector<const Semaphore*>();                                             //Семафоры или nullptr для синхронизации между потоками
         for(auto q: queue_size) {
             if(q > 0) {
                 Semaphores.push_back(new Semaphore);
