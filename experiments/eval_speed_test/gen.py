@@ -7,19 +7,32 @@ from tqdm import tqdm
 
 import matplotlib.pyplot as plt
 
+IN_SCRIPT = True
+STATUS_PRINT = not IN_SCRIPT
+
 # TODO
 # Комментарии
 
-filename = 'dep_graph-600K.json'
+filename = 'dep_graph.json'
 
-THREAD_COUNT = 2 if len(sys.argv) == 1 else int(sys.argv[1])
-LOSS = 100000 if len(sys.argv) == 1 else int(sys.argv[2])
+def print_status(*args):
+    if STATUS_PRINT:
+        print(*args)
 
-IN_SCRIPT = True
+def print_while_in_script(*args):
+    if IN_SCRIPT:
+        print(*args)
 
 def main():
-    print()
-    print('Reading...')
+    if len(sys.argv) != 3:
+        print_status('Expected thread count and loss')
+        quit(1)
+
+    THREAD_COUNT = int(sys.argv[1])
+    LOSS = int(sys.argv[2])
+
+    print_status()
+    print_status('Reading...')
 
     fd = open(filename, 'r')
     graph_raw = json.load(fd)
@@ -37,14 +50,14 @@ def main():
     turn2vertex_id = graph.topological_sorting(mode='out')
 
     single_thread_time = sum(graph.vs['w'])
-    print('Cost in single-thread computation:', single_thread_time)
+    print_status('Cost in single-thread computation:', single_thread_time)
 
-    print()
-    print('Greedy algorithm:')
+    print_status()
+    print_status('Greedy algorithm:')
 
     time_per_thread = [0] * THREAD_COUNT
     iter = 0
-    for vertex_id in tqdm(turn2vertex_id):
+    for vertex_id in turn2vertex_id: #tqdm(turn2vertex_id):
 
         vertex = graph.vs[vertex_id]
         parents = vertex.neighbors(mode='in')
@@ -76,13 +89,13 @@ def main():
         vertex['t'] = proposed_time_per_thread[thread]
 
     cost_greedy = time_per_thread
-    print('Cost per thread:', cost_greedy)
-    print('Overhead:', str(sum(cost_greedy) - np.sum(graph.vs['w'])) + ',', str(round(100 * (sum(cost_greedy) / single_thread_time - 1), 3)) + '%')
+    print_status('Cost per thread:', cost_greedy)
+    print_status('Overhead:', str(sum(cost_greedy) - np.sum(graph.vs['w'])) + ',', str(round(100 * (sum(cost_greedy) / single_thread_time - 1), 3)) + '%')
 
     if IN_SCRIPT:
-        print('timeperthread', max(cost_greedy))
+        print_while_in_script('predictedtime', max(cost_greedy))
 
-    print('Creating dump')                                                  
+    print_status('Creating dump')                                                  
 
     fd = open('cut.txt', 'w')                                                   #См структуру Line в main.cpp
 
@@ -90,7 +103,7 @@ def main():
     for i in range(len(turn2vertex_id)):                                        #   то есть обратное к turn2vertex_id
         vertex_id2turn[turn2vertex_id[i]] = i
 
-    for vertex_id in tqdm(turn2vertex_id):                                      #Последовательно дампим расписание в cut.txt в соотвествии с правилом, описанным
+    for vertex_id in turn2vertex_id: #tqdm(turn2vertex_id):                                      #Последовательно дампим расписание в cut.txt в соотвествии с правилом, описанным
                                                                                 #   в комментарии к структуре Line в main.cpp
         vertex = graph.vs[vertex_id]
         parents = vertex.neighbors(mode='in')
