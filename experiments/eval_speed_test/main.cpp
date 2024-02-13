@@ -11,10 +11,12 @@
 #include "semaphore.hpp"
 #include "common.hpp"
 
+#define DEBUG_THREAD 2
+
 using namespace std;
 
 const char input_path[] = "cut.txt";                    //См описание структуры Line
-const int RUN_COUNT = 10;                               //Число запусков теста. Программа выводит среднее время работы теста в миллисекундах
+const int RUN_COUNT = 1000;                               //Число запусков теста. Программа выводит среднее время работы теста в миллисекундах
 
 /* TODO
 */
@@ -72,10 +74,11 @@ private:
 };
 
 void worker(vector<const Line*> lines,              //Весь "код" из cut.txt
-            vector<const Semaphore*> Semaphores,    //Семафоры для синхронизиции потоков или nullptr если результат вершины используется только в ее потоке
+            vector<const Semaphore*> semaphores,    //Семафоры для синхронизиции потоков или nullptr если результат вершины используется только в ее потоке
             int thread,                       //Номер потока этого воркера
             Semaphore* start_sema_1,          //Два семафора, отвечающие за
             Semaphore* start_sema_2,          //  (почти) синхронный старт воркеров
+            Semaphore* end_sema,
             vector<int> queue_size) {         //Число вершин из отличного от thread потока, желающих получить доступ к текущей вершине
 
     auto line_queue = vector<const Line*>();              //Выделяем только те вершины, которые обрабатываются текущим потоком
@@ -85,54 +88,126 @@ void worker(vector<const Line*> lines,              //Весь "код" из cut
         }
     }
 
-    start_sema_1 -> signal();                       //Гарантия "одновременного" старта
-    start_sema_2 -> wait();
+    for(int worker_iteration = 0; worker_iteration < RUN_COUNT; ++worker_iteration) {
+        start_sema_1 -> signal();                       //Гарантия "одновременного" старта
+        start_sema_2 -> wait();
 
-    int queue_len = line_queue.size();
-    for(int line_iter = 0; line_iter < queue_len; ++line_iter) {    //Большой кусок кода про последовалельную симуляцию работы вершин ТОЛЬКО текущего потока
-        auto line_ptr = line_queue[line_iter];
+        for(int line_iter = 0; line_iter < line_queue.size(); ++line_iter) {    //Большой кусок кода про последовалельную симуляцию работы вершин ТОЛЬКО текущего потока
+            auto line_ptr = line_queue[line_iter];
 
-        int len_dep = (line_ptr -> sync_deps).size();               //Обрабатываем зависимости между потоками
-        for(int dep_iter = 0; dep_iter < len_dep; ++dep_iter) {
-            int dep = (line_ptr -> sync_deps)[dep_iter];
+            #ifdef DEBUG_PRINT
+            if(thread == DEBUG_THREAD) {
+                printf("%d", line_ptr -> index);
+            }
+            #endif
 
-            Semaphores[dep] -> wait();
+            int len_dep = (line_ptr -> sync_deps).size();               //Обрабатываем зависимости между потоками
+            for(int dep_iter = 0; dep_iter < len_dep; ++dep_iter) {
+                int dep = (line_ptr -> sync_deps)[dep_iter];
 
-            int data_pos = 0;
-            for(size_t i = 0; i < lines[dep] -> data.size(); ++i, ++data_pos) {
-                if(data_pos >= line_ptr -> weight) {
-                    data_pos = 0;
+                semaphores[dep] -> wait();
+
+                #ifdef DEBUG_PRINT
+                if(thread == DEBUG_THREAD) {
+                    printf(" %d", -dep -1);
                 }
+                #endif
 
-                line_ptr -> data[data_pos] += lines[dep] -> data[i];
+                int data_pos = 0;
+                for(size_t i = 0; i < lines[dep] -> data.size(); ++i, ++data_pos) {
+                    if(data_pos >= line_ptr -> weight) {
+                        data_pos = 0;
+                    }
+
+                    line_ptr -> data[data_pos] += lines[dep] -> data[i];
+                }
+            }
+            
+            len_dep = (line_ptr -> forward_deps).size();                //Обрабатываем зависимости внутри потока
+            for(int dep_iter = 0; dep_iter < len_dep; ++dep_iter) {
+                int dep = (line_ptr -> forward_deps)[dep_iter];
+
+                #ifdef DEBUG_PRINT
+                if(thread == DEBUG_THREAD) {
+                    printf(" %d", dep);
+                }
+                #endif
+
+                int data_pos = 0;
+                for(size_t i = 0; i < lines[dep] -> data.size(); ++i, ++data_pos) {
+                    if(data_pos >= line_ptr -> weight) {
+                        data_pos = 0;
+                    }
+
+                    line_ptr -> data[data_pos] += lines[dep] -> data[i];
+                }
+            }
+
+            int q = queue_size[line_ptr -> index];
+            #ifdef DEBUG_PRINT
+            if(thread == DEBUG_THREAD) {
+                printf(" %d\n", q);
+            }
+            #endif                   
+            if(q > 0) {
+                semaphores[line_ptr -> index] -> signal(q);
             }
         }
+
+        end_sema -> signal();
+    }
+
+    return;
+}
+
+void single_thread_worker(vector<const Line*> lines,              //Весь "код" из cut.txt
+                          vector<int> queue_size) {         //Число вершин из отличного от thread потока, желающих получить доступ к текущей вершине
+
+    for(int worker_iteration = 0; worker_iteration < RUN_COUNT; ++worker_iteration) {
         
-        len_dep = (line_ptr -> forward_deps).size();                //Обрабатываем зависимости внутри потока
-        for(int dep_iter = 0; dep_iter < len_dep; ++dep_iter) {
-            int dep = (line_ptr -> forward_deps)[dep_iter];
+        int queue_len = lines.size();
+        for(int line_iter = 0; line_iter < queue_len; ++line_iter) {    //Большой кусок кода про последовалельную симуляцию работы вершин ТОЛЬКО текущего потока
+            auto line_ptr = lines[line_iter];
 
-            int data_pos = 0;
-            for(size_t i = 0; i < lines[dep] -> data.size(); ++i, ++data_pos) {
-                if(data_pos >= line_ptr -> weight) {
-                    data_pos = 0;
+            #ifdef DEBUG_PRINT
+            printf("%d", line_ptr -> index);
+            #endif
+            
+            int len_dep = (line_ptr -> forward_deps).size();                //Обрабатываем зависимости внутри потока
+            for(int dep_iter = 0; dep_iter < len_dep; ++dep_iter) {
+                int dep = (line_ptr -> forward_deps)[dep_iter];
+                
+                #ifdef DEBUG_PRINT
+                printf(" %d", dep);
+                #endif
+
+                int data_pos = 0;
+                for(size_t i = 0; i < lines[dep] -> data.size(); ++i, ++data_pos) {
+                    if(data_pos >= line_ptr -> weight) {
+                        data_pos = 0;
+                    }
+
+                    line_ptr -> data[data_pos] += lines[dep] -> data[i];
                 }
-
-                line_ptr -> data[data_pos] += lines[dep] -> data[i];
             }
-        }
 
-        int q = queue_size[line_ptr -> index];                      //Говорим всем, что мы посчитали свое значение и другим потокам можно его читать
-        if(q > 0) {
-            Semaphores[line_ptr -> index] -> signal(q);
+            #ifdef DEBUG_PRINT
+            printf("\n");
+            #endif
         }
     }
 
     return;
 }
 
-int main_routine() {                                                        
+vector<long> main_routine() {    
+    // ====================================================== //
+    // Чтение //
+    // ====================================================== //
+
+    #ifdef STATUS_PRINT
     printf("Reading\n");                                            //Чтение из cut.txt
+    #endif
 
     ifstream fd;
     fd.open(input_path, ios_base::in);
@@ -151,7 +226,13 @@ int main_routine() {
 
     fd.close();
 
+    #ifdef STATUS_PRINT
     printf("%lu lines read\n", lines.size());
+    #endif
+
+    // ====================================================== //
+    // Статистика по прочитанному //
+    // ====================================================== //
 
     int max_thread = -1;                                                                    //Вычисляем реальное число потоков, т.к. gen.py может не использовать часть из них
     for(auto line_ptr: lines) {
@@ -159,7 +240,9 @@ int main_routine() {
     }
     int thread_count = max_thread + 1;
 
-    printf("Thread count: %d\n", thread_count);                                             
+    #ifdef STATUS_PRINT
+    printf("Thread count: %d\n", thread_count);
+    #endif                                             
 
     vector<int> queue_size(lines.size(), 0);                                                //Массив, определяющий число вешнин из других потоков, зависящих от данной
     for(auto line_ptr: lines) {
@@ -168,72 +251,106 @@ int main_routine() {
         }
     }
 
-    vector<long> results;                                                                   //Результаты тестирования в миллисекундах
+    // ====================================================== //
+    // Вычисления //
+    // ====================================================== //
 
-    for(int run = 0; run < RUN_COUNT; ++run) {                                              //Основной цикл, см RUN_COUNT
-        auto Semaphores = vector<const Semaphore*>();                                             //Семафоры или nullptr для синхронизации между потоками
-        for(auto q: queue_size) {
+    vector<long> results;
+    if (thread_count != 1) {
+
+        // ====================================================== //
+        // Подготовка //
+        // ====================================================== //
+
+        Semaphore start_sema_1(thread_count);
+        Semaphore start_sema_2(thread_count);  
+        Semaphore end_sema(thread_count);
+        
+        auto semaphores = vector<const Semaphore*>();
+        for(auto q: queue_size) {                                                               
             if(q > 0) {
-                Semaphores.push_back(new Semaphore);
+                semaphores.push_back(new Semaphore);
             }
             else {
-                Semaphores.push_back(nullptr);
+                semaphores.push_back(nullptr);
             }
         }
 
-        vector<thread*> thread_pool(thread_count, nullptr);                                 
-        Semaphore start_sema_1(thread_count);                                               //Семафоры для (почти) одновременного заппуска основной нагрузки потоков
-        Semaphore start_sema_2(thread_count);                                               //  после выполнения их подготовки
-
+        vector<thread*> thread_pool(thread_count, nullptr); 
         for(int t = 0; t < thread_count; ++t) {
-            thread_pool[t] = new thread(worker, lines, Semaphores, t, &start_sema_1, &start_sema_2, queue_size);
+            thread_pool[t] = new thread(worker, lines, semaphores, t, &start_sema_1, &start_sema_2, &end_sema, queue_size);
         }
 
-        for(int t = 0; t < thread_count; ++t) {
-            start_sema_1.wait();
+        // ====================================================== //
+        // Прогон в цикле //
+        // ====================================================== //
+
+        for(int run = 0; run < RUN_COUNT; ++run) {
+            for(int t = 0; t < thread_count; ++t) {
+                start_sema_1.wait();
+            }
+
+            auto start = std::chrono::high_resolution_clock::now();
+            
+            start_sema_2.signal(thread_count);
+
+            for(int t = 0; t < thread_count; ++t) {
+                end_sema.wait();
+            }
+
+            auto stop = std::chrono::high_resolution_clock::now();
+
+            results.push_back(chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
         }
 
-        auto start = std::chrono::high_resolution_clock::now();
-        
-        for(int t = 0; t < thread_count; ++t) {
-            start_sema_2.signal();
-        }
+        // ====================================================== //
+        // Очистка //
+        // ====================================================== //
 
         for(int t = 0; t < thread_count; ++t) {
             thread_pool[t] -> join();
-        }
-
-        auto stop = std::chrono::high_resolution_clock::now();
-
-        results.push_back(chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
-
-        for(int t = 0; t < thread_count; ++t) {
+            
             delete thread_pool[t];
         }
-
-        for(auto sema_ptr: Semaphores) {
+        
+        for(auto sema_ptr: semaphores) {
             if(sema_ptr != nullptr) {
                 delete sema_ptr;
             }
         }
+    }
+    else {
+        // ====================================================== //
+        // Простой случай //
+        // ====================================================== //
+
+        auto start = std::chrono::high_resolution_clock::now();
+
+        single_thread_worker(lines, queue_size);
+
+        auto stop = std::chrono::high_resolution_clock::now();
+
+        results.push_back(chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
     }
 
     for(auto line_ptr: lines) {
         delete line_ptr;
     }
 
-    long sum = 0;
-    for(int i = 0; i < RUN_COUNT; ++i) sum = sum + results[i];
-
-    #ifdef IN_SCRIPT
-    printf( "result %3.1lf\n", static_cast<double>(sum) / RUN_COUNT);
-    #else
-    printf("Mean time: %3.1lfms\n", static_cast<double>(sum) / RUN_COUNT);
-    #endif
-
-    return 0;
+    return results;
 }
 
 int main() {
-    return main_routine();
+    auto results = main_routine();
+
+    long sum = 0;
+    for(int i = 0; i < results.size(); ++i) sum = sum + results[i];
+
+    #ifdef IN_SCRIPT
+    printf( "result %3.3lf\n", static_cast<double>(sum) / RUN_COUNT);
+    #else
+    printf("Mean time: %3.3lfms\n", static_cast<double>(sum) / RUN_COUNT);
+    #endif
+
+    return 0;
 }
