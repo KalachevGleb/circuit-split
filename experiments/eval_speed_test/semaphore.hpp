@@ -167,10 +167,10 @@ public:
 class LightweightSemaphore
 {
 private:
-    std::atomic<int> m_count;
-    BasicSemaphore m_sema;
+    mutable std::atomic<int> m_count;
+    mutable BasicSemaphore m_sema;
 
-    void waitWithPartialSpinning()
+    void waitWithPartialSpinning() const
     {
         int oldCount;
         // Is there a better way to set the initial spin count?
@@ -197,19 +197,19 @@ public:
         assert(initialCount >= 0);
     }
 
-    bool tryWait()
+    bool tryWait() const
     {
         int oldCount = m_count.load(std::memory_order_relaxed);
         return (oldCount > 0 && m_count.compare_exchange_strong(oldCount, oldCount - 1, std::memory_order_acquire));
     }
 
-    void wait()
+    void wait() const
     {
         if (!tryWait())
             waitWithPartialSpinning();
     }
 
-    void signal(int count = 1)
+    void signal(int count = 1) const
     {
         int oldCount = m_count.fetch_add(count, std::memory_order_release);
         int toRelease = -oldCount < count ? -oldCount : count;
