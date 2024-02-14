@@ -6,8 +6,9 @@ allLOSSes=(100 200 300 500 750 1000 2000 3000 4000 5000 6000 7000 8000 9000 1000
 
 mkdir -p $outDir
 
-for t in ${allThreads[@]}; do
+for thread in ${allThreads[@]}; do
     for l in ${allLOSSes[@]}; do
-        python gen.py $t $l "$outDir/$t_$l.txt"
+        predictedTime=$(python gen.py $thread $l temp.txt)
+        mv temp.txt $outDir/$thread\ $l\ $predictedTime.txt
     done
 done

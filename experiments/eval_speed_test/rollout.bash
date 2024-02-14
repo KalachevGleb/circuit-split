@@ -2,13 +2,32 @@
 
 g++ *.cpp -O3 -DIN_SCRIPT -o work
 
-allThreads=(1 2 4)
-allLOSSes=(100 200 300 500 750 1000 2000 3000 4000 5000 6000 7000 8000 9000 10000 20000 30000 40000 50000 60000 70000 80000 90000 100000)
+folder_path="cuts"
 
-for t in ${allThreads[@]}; do
-    for l in ${allLOSSes[@]}; do
-        echo "config $t $l"
-        python gen.py $t $l
-        ./work
-    done
+# Check if the folder exists
+if [ ! -d "$folder_path" ]; then
+  echo "Folder does not exist: $folder_path"
+  exit 1
+fi
+
+
+# Iterate through each file in the folder
+for file_path in "$folder_path"/*; do
+  if [ -f "$file_path" ]; then
+    # Extract two integers from the filename
+    filename=$(basename "$file_path")
+
+    if [[ "$filename" =~ ^([0-9]+)\ ([0-9]+)\ ([0-9]+)\.txt$ ]]; then
+      threads="${BASH_REMATCH[1]}"
+      loss="${BASH_REMATCH[2]}"
+      predictedTime="${BASH_REMATCH[3]}"
+      
+      echo config $threads $loss
+      echo predictedtime $predictedTime
+      echo result $(./work $file_path)
+    else
+      echo "Skipping file with invalid format: $filename"
+      exit 1
+    fi
+  fi
 done
