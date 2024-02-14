@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 
 import matplotlib.pyplot as plt
@@ -28,6 +30,12 @@ def main():
         data_pred[LOSSES.index(exp['loss']), THREADS.index(exp['thread'])] = exp['predicted']
         data_real[LOSSES.index(exp['loss']), THREADS.index(exp['thread'])] = exp['real']
 
+    print('Best real times:')
+    print(str(np.amin(data_real, axis=0)) + 'ms')
+    
+    print('Min time:', np.amin(data_real))
+    print('Max time:', np.amax(data_real))
+
     x = np.arange(len(THREADS))
 
     y1s = data_pred / np.max(data_pred, axis=1, keepdims=True)
@@ -35,7 +43,7 @@ def main():
 
     width = 0.35
 
-    fig, axs = plt.subplots(len(LOSSES), 1, figsize=(10, 35))
+    fig, axs = plt.subplots(len(LOSSES), 1, figsize=(10, int(sys.argv[1])))
 
     for plot_num in range(len(axs)):
         ax = axs[plot_num]
