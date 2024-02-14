@@ -15,7 +15,7 @@
 
 using namespace std;
 
-const char input_path[] = "cut.txt";                    //См описание структуры Line
+const char INPUT_PATH[] = "cut.txt";                    //См описание структуры Line
 const int RUN_COUNT = 1000;                               //Число запусков теста. Программа выводит среднее время работы теста в миллисекундах
 
 /*
@@ -206,7 +206,7 @@ void single_thread_worker(vector<const Line*> lines,              //Весь "к
     return;
 }
 
-vector<long> main_routine() {    
+vector<long> main_routine(const char* input_path) {    
     // ====================================================== //
     // Чтение //
     // ====================================================== //
@@ -346,8 +346,15 @@ vector<long> main_routine() {
     return results;
 }
 
-int main() {
-    auto results = main_routine();
+int main(int argc, const char* argv[]) {
+    vector<long> results;
+
+    if(argc == 2) {
+        results = main_routine(argv[1]);
+    }
+    else {
+        results = main_routine(INPUT_PATH);
+    }
 
     long sum = 0;
     for(int i = 0; i < results.size(); ++i) sum = sum + results[i];
