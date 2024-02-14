@@ -13,7 +13,7 @@ STATUS_PRINT = not IN_SCRIPT
 # TODO
 # Комментарии
 
-filename = 'dep_graph.json'
+filename = 'dep_graph-600K.json'
 
 def print_status(*args):
     if STATUS_PRINT:
@@ -93,7 +93,7 @@ def main():
     print_status('Overhead:', str(sum(cost_greedy) - np.sum(graph.vs['w'])) + ',', str(round(100 * (sum(cost_greedy) / single_thread_time - 1), 3)) + '%')
 
     if IN_SCRIPT:
-        print_while_in_script('predictedtime', max(cost_greedy))
+        print_while_in_script(max(cost_greedy))
 
     print_status('Creating dump')                                                  
     
