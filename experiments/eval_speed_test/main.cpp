@@ -18,6 +18,12 @@ using namespace std;
 const char input_path[] = "cut.txt";                    //См описание структуры Line
 const int RUN_COUNT = 1000;                               //Число запусков теста. Программа выводит среднее время работы теста в миллисекундах
 
+/*
+Нужно что-то быстрее семафора
+Надо попробовать не степень двойки потоков
+Надо попробовать LightweightSemaphore на сервере
+*/
+
 /* TODO
 */
 
@@ -85,7 +91,7 @@ void worker(vector<const Line*> lines,              //Весь "код" из cut
     for(auto line_ptr: lines)  {
         if(line_ptr -> thread == thread) {
             line_queue.push_back(line_ptr);
-        }
+        } 
     }
 
     for(int worker_iteration = 0; worker_iteration < RUN_COUNT; ++worker_iteration) {
