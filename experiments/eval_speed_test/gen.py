@@ -24,8 +24,8 @@ def print_while_in_script(*args):
         print(*args)
 
 def main():
-    if len(sys.argv) != 3:
-        print_status('Expected thread count and loss')
+    if len(sys.argv) not in [3, 4]:
+        print_status('Expected thread count loss[, and out file]')
         quit(1)
 
     THREAD_COUNT = int(sys.argv[1])
@@ -96,8 +96,11 @@ def main():
         print_while_in_script('predictedtime', max(cost_greedy))
 
     print_status('Creating dump')                                                  
-
-    fd = open('cut.txt', 'w')                                                   #См структуру Line в main.cpp
+    
+    if len(sys.argv) == 3:
+        fd = open('cut.txt', 'w')                                                   #См структуру Line в main.cpp
+    else:
+        fd = open(sys.argv[3], 'w')
 
     vertex_id2turn = [None for _ in range(len(turn2vertex_id))]                 #Строим отображение id вершны в ее место по очереди в топологической сортировке
     for i in range(len(turn2vertex_id)):                                        #   то есть обратное к turn2vertex_id
