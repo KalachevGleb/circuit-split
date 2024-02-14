@@ -174,3 +174,4 @@ experiments/eval_speed_test/log_100k.txt
 experiments/eval_speed_test/log_10k.txt
 experiments/eval_speed_test/log.txt
 experiments/eval_speed_test/perfomance.png
+experiments/eval_speed_test/cuts/
