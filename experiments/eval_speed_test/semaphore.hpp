@@ -220,9 +220,6 @@ public:
     }
 };
 
-
-typedef LightweightSemaphore DefaultSemaphoreType;
-
-using Semaphore = BasicSemaphore;
+using Semaphore = LightweightSemaphore;
 
 #endif

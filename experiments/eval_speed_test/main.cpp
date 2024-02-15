@@ -360,7 +360,7 @@ int main(int argc, const char* argv[]) {
     for(int i = 0; i < results.size(); ++i) sum = sum + results[i];
 
     #ifdef IN_SCRIPT
-    printf( "result %3.3lf\n", static_cast<double>(sum) / RUN_COUNT);
+    printf("%3.3lf\n", static_cast<double>(sum) / RUN_COUNT);
     #else
     printf("Mean time: %3.3lfms\n", static_cast<double>(sum) / RUN_COUNT);
     #endif
