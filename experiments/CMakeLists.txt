@@ -1,0 +1,8 @@
+project(experiments)
+cmake_minimum_required(VERSION 3.16)
+
+set(CMAKE_CXX_STANDARD 20)
+add_subdirectory(utils)
+add_subdirectory(eval_speed_test)
+add_subdirectory(layer_by_layer_test)
+add_subdirectory(thread_sync_test)
