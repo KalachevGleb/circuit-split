@@ -2,7 +2,7 @@
 
 g++ *.cpp -O3 -DIN_SCRIPT -o work
 
-folder_path="cuts"
+folder_path="$1"
 
 # Check if the folder exists
 if [ ! -d "$folder_path" ]; then
@@ -24,7 +24,7 @@ for file_path in "$folder_path"/*; do
       
       echo config $threads $loss
       echo predictedtime $predictedTime
-      echo result $(./work $file_path)
+      echo result $(./"$2" $file_path)
     else
       echo "Skipping file with invalid format: $filename"
       exit 1
