@@ -1,0 +1,2 @@
+python gen.py 3 100
+spin=100000
