@@ -7,32 +7,39 @@ from tqdm import tqdm
 
 import matplotlib.pyplot as plt
 
-IN_SCRIPT = True
-STATUS_PRINT = not IN_SCRIPT
+IN_SCRIPT = False
+FRIENDLY = True
+MODE = 2
 
 # TODO
 # Комментарии
 
-filename = 'dep_graph-600K.json'
+filename = 'dep_graph.json'
 
-def print_status(*args):
-    if STATUS_PRINT:
+def print_freindly(*args):
+    if FRIENDLY:
         print(*args)
 
-def print_while_in_script(*args):
+def print_in_script(*args):
     if IN_SCRIPT:
         print(*args)
 
+def tqdm_friendly(*args):
+    if FRIENDLY:
+        return tqdm(*args)
+    else:
+        return args
+
 def main():
-    if len(sys.argv) not in [3, 4]:
-        print_status('Expected thread count loss[, and out file]')
+    if len(sys.argv) not in [4, 5]:
+        print_freindly('Ожидались желаемое число потоков, стоимость мьютекса[, и путь до выходного файла]')
         quit(1)
 
     THREAD_COUNT = int(sys.argv[1])
-    LOSS = int(sys.argv[2])
+    LOSS = float(sys.argv[2])
+    LOSS2 = float(sys.argv[3])
 
-    print_status()
-    print_status('Reading...')
+    print_freindly('Чтение графа')
 
     fd = open(filename, 'r')
     graph_raw = json.load(fd)
@@ -49,58 +56,95 @@ def main():
 
     turn2vertex_id = graph.topological_sorting(mode='out')
 
-    single_thread_time = sum(graph.vs['w'])
-    print_status('Cost in single-thread computation:', single_thread_time)
+    if MODE == 1:
+        single_thread_time = np.sum(graph.vs['w'])
+    if MODE == 2:
+        single_thread_time = np.sum(np.array(graph.vs['w'], dtype=np.int64) * np.array([len(vertex.neighbors(mode='out')) for vertex in graph.vs], dtype=np.int64))
 
-    print_status()
-    print_status('Greedy algorithm:')
+    print_freindly('Стоимость однопоточного вычисления:', single_thread_time)
 
-    time_per_thread = [0] * THREAD_COUNT
-    iter = 0
-    for vertex_id in turn2vertex_id: #tqdm(turn2vertex_id):
+    print_freindly('Использую жадный алгоритм')
+    
+    print_freindly('Гафи интерпретируется в режиме', MODE)
 
-        vertex = graph.vs[vertex_id]
-        parents = vertex.neighbors(mode='in')
+    if MODE == 1:
+        time_per_thread = [0] * THREAD_COUNT
 
-        if vertex['w'] == 0:
-            vertex['t'] = 0
-            vertex['p'] = 0
-            continue
+        for vertex_id in tqdm_friendly(turn2vertex_id):
 
-        proposed_time_per_thread = [None] * THREAD_COUNT
-        for thread in range(THREAD_COUNT):
-            t = -1
-            for parent in parents:
-                if parent['p'] != thread:
-                    t = max(vertex['w'] + parent['t'] + LOSS, t)
-                else:
-                    t = max(vertex['w'] + parent['t'], t)
+            vertex = graph.vs[vertex_id]
+            parents = vertex.neighbors(mode='in')
 
-            if t < time_per_thread[thread] + vertex['w']:
-                t = time_per_thread[thread] + vertex['w']
+            if vertex['w'] == 0:
+                vertex['t'] = 0
+                vertex['p'] = 0
+                continue
 
-            proposed_time_per_thread[thread] = t
+            proposed_time_per_thread = [None] * THREAD_COUNT
+            for thread in range(THREAD_COUNT):
+                t = -1
+                for parent in parents:
+                    if parent['p'] != thread:
+                        t = max(vertex['w'] + parent['t'] + LOSS, t)
+                    else:
+                        t = max(vertex['w'] + parent['t'], t)
 
-        thread = np.argmin(proposed_time_per_thread)
+                if t < time_per_thread[thread] + vertex['w']:
+                    t = time_per_thread[thread] + vertex['w']
 
-        time_per_thread[thread] = proposed_time_per_thread[thread]
-        
-        vertex['p'] = thread
-        vertex['t'] = proposed_time_per_thread[thread]
+                proposed_time_per_thread[thread] = t
 
-    cost_greedy = time_per_thread
-    print_status('Cost per thread:', cost_greedy)
-    print_status('Overhead:', str(sum(cost_greedy) - np.sum(graph.vs['w'])) + ',', str(round(100 * (sum(cost_greedy) / single_thread_time - 1), 3)) + '%')
+            thread = np.argmin(proposed_time_per_thread)
+
+            time_per_thread[thread] = proposed_time_per_thread[thread]
+            
+            vertex['p'] = thread
+            vertex['t'] = proposed_time_per_thread[thread]
+
+        cost_greedy = time_per_thread
+    elif MODE == 2:
+        time_per_thread = [0] * THREAD_COUNT
+
+        for vertex_id in tqdm_friendly(turn2vertex_id):
+
+            vertex = graph.vs[vertex_id]
+            parents = vertex.neighbors(mode='in')
+
+            if len(parents) == 0:
+                vertex['t'] = 0
+                vertex['p'] = 0
+                continue
+
+            proposed_time_per_thread = [None] * THREAD_COUNT
+            for thread in range(THREAD_COUNT):
+                t = time_per_thread[thread]
+                for parent in parents:
+                    if parent['p'] != thread:
+                        t += parent['w'] * LOSS + LOSS2
+                    else:
+                        t += parent['w']
+
+                proposed_time_per_thread[thread] = t
+
+            thread = np.argmin(proposed_time_per_thread)
+
+            time_per_thread[thread] = proposed_time_per_thread[thread]
+            
+            vertex['p'] = thread
+            vertex['t'] = proposed_time_per_thread[thread]
+
+        cost_greedy = time_per_thread
+
+    print_freindly('Стоимость потоков:', cost_greedy)
+    print_freindly('Overhead:', str(sum(cost_greedy) - np.sum(graph.vs['w'])))
+    print_freindly('Выгода: ' + str(round(100 * (1 - max(cost_greedy) / single_thread_time), 3)) + '%')
 
     if IN_SCRIPT:
-        print_while_in_script(max(cost_greedy))
+        print_in_script(max(cost_greedy))
 
-    print_status('Creating dump')                                                  
+    print_freindly('Делаю дамп разреза')                                                  
     
-    if len(sys.argv) == 3:
-        fd = open('cut.txt', 'w')                                                   #См структуру Line в main.cpp
-    else:
-        fd = open(sys.argv[3], 'w')
+    fd = open('cut.txt', 'w')                                                   #См структуру Line в main.cpp
 
     vertex_id2turn = [None for _ in range(len(turn2vertex_id))]                 #Строим отображение id вершны в ее место по очереди в топологической сортировке
     for i in range(len(turn2vertex_id)):                                        #   то есть обратное к turn2vertex_id
@@ -129,6 +173,8 @@ def main():
         fd.write('\n')
 
     fd.close()
+
+    print_freindly('Готово! Have a nice day :)')
 
 if __name__ == '__main__':
     main()
