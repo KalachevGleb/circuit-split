@@ -16,7 +16,7 @@
 using namespace std;
 
 const char INPUT_PATH[] = "cut.txt";                    //См описание структуры Line
-const int RUN_COUNT = 1000;                               //Число запусков теста. Программа выводит среднее время работы теста в миллисекундах
+const int RUN_COUNT = 10;                               //Число запусков теста. Программа выводит среднее время работы теста в миллисекундах
 
 /*
 Нужно что-то быстрее семафора
@@ -76,7 +76,6 @@ struct Line {
 
 private:
     Line() = delete;
-    Line(const Line&) = delete;
 };
 
 void worker(vector<const Line*> lines,              //Весь "код" из cut.txt
@@ -344,6 +343,39 @@ vector<long> main_routine(const char* input_path) {
     }
 
     return results;
+}
+
+vector<Line> read_lines(const char* input_path) {
+    ifstream fd;
+    fd.open(input_path, ios_base::in);
+
+    string read_buff;
+    vector<Line> lines;
+    if (fd.is_open()) {
+        while (fd) {
+            getline(fd, read_buff);
+
+            if(split_string(read_buff).size() == 0) continue;       
+
+            lines.push_back(Line(read_buff));
+        }
+    }
+
+    fd.close();
+
+    return lines;
+}
+
+vector<Line> schedule2lines(vector<int> schedule, vector<Line> clear_lines) {
+    // TBD
+
+    // auto ret = vector<Line>();
+
+    // for(auto line_num: schedule) {
+    //     Line result_line = clear_lines[line_num];
+
+    //     int thread = schedule[]
+    // }
 }
 
 int main(int argc, const char* argv[]) {
