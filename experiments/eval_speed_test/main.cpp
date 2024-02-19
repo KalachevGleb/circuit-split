@@ -15,7 +15,7 @@
 using namespace std;
 
 const char INPUT_PATH[] = "cut.txt";                    //См описание структуры Line
-const int RUN_COUNT = 50;                               //Число запусков теста. Программа выводит среднее время работы теста в миллисекундах
+const int RUN_COUNT = 200;                               //Число запусков теста. Программа выводит среднее время работы теста в миллисекундах
 
 /*
 Нужно что-то быстрее семафора
@@ -92,12 +92,9 @@ void worker(vector<const Line*> lines,              //Весь "код" из cut
         } 
     }
 
-    // #ifdef PROFILE_SEMAPHORE
-    // SemaphoreProfiler in_loop_profiler;
-    // if(thread == DEBUG_THREAD) {
-    //         in_loop_profiler.start();
-    // }
-    // #endif
+    #ifdef PROFILE
+    auto start = std::chrono::high_resolution_clock::now();
+    #endif
 
     for(int worker_iteration = 0; worker_iteration < RUN_COUNT; ++worker_iteration) {
         start_sema_1 -> signal();                       //Гарантия "одновременного" старта
@@ -168,20 +165,12 @@ void worker(vector<const Line*> lines,              //Весь "код" из cut
         end_sema -> signal();
     }
 
-    // #ifdef PROFILE_SEMAPHORE
-    // if(thread == DEBUG_THREAD) {
-    //     in_loop_profiler.stop();
-
-    //     double in_loop_profiler_real = static_cast<double>(in_loop_profiler.get_real_time()) / (1000 * RUN_COUNT);
-    //     double in_loop_profiler_sema = static_cast<double>(in_loop_profiler.get_sema_time()) / (1000 * RUN_COUNT);
-
-    //     printf("Работа с семафорами при делегировании задачи воркеру заняла %3.2lf% времени, а именно %3.2lfms из %3.2lfms\n",
-    //         in_loop_profiler_sema / in_loop_profiler_real * 100,
-    //         in_loop_profiler_sema,
-    //         in_loop_profiler_real
-    //     );
-    // }
-    // #endif
+    #ifdef PROFILE
+    auto stop = std::chrono::high_resolution_clock::now();
+    if(thread == DEBUG_THREAD) {
+        printf("Поток %d считался %3.2lfms\n", thread, static_cast<double>(chrono::duration_cast<std::chrono::microseconds>(stop - start).count()) / (1000 * RUN_COUNT));
+    }
+    #endif
 
     return;
 }
