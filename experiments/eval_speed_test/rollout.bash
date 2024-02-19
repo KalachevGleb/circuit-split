@@ -1,6 +1,6 @@
 #!/bin/bash
 
-g++ *.cpp -O3 -DIN_SCRIPT -o work
+#g++ *.cpp -O3 -DIN_SCRIPT -o work
 
 folder_path="$1"
 
@@ -17,14 +17,15 @@ for file_path in "$folder_path"/*; do
     # Extract two integers from the filename
     filename=$(basename "$file_path")
 
-    if [[ "$filename" =~ ^([0-9]+)\ ([0-9]+)\ ([0-9]+)\.txt$ ]]; then
+   if [[ $filename =~ ([0-9]+(\.[0-9]+)?)\ ([0-9]+(\.[0-9]+)?)\ ([0-9]+(\.[0-9]+)?)\ ([0-9]+(\.[0-9]+)?)\.txt ]]; then
       threads="${BASH_REMATCH[1]}"
-      loss="${BASH_REMATCH[2]}"
-      predictedTime="${BASH_REMATCH[3]}"
+      loss1="${BASH_REMATCH[3]}"
+      loss2="${BASH_REMATCH[5]}"
+      predictedTime="${BASH_REMATCH[7]}"
       
-      echo config $threads $loss
+      echo config $threads $loss1 $loss2
       echo predictedtime $predictedTime
-      echo result $(./"$2" $file_path)
+      echo result $(./work "$file_path")
     else
       echo "Skipping file with invalid format: $filename"
       exit 1
