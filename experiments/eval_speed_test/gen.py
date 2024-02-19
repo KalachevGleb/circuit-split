@@ -14,7 +14,7 @@ MODE = 2
 # TODO
 # Комментарии
 
-filename = 'dep_graph.json'
+filename = 'blob/dep_graph.json'
 
 def print_freindly(*args):
     if FRIENDLY:
@@ -24,9 +24,9 @@ def print_in_script(*args):
     if IN_SCRIPT:
         print(*args)
 
-def tqdm_friendly(*args):
+def tqdm_friendly(args):
     if FRIENDLY:
-        return tqdm(*args)
+        return tqdm(args)
     else:
         return args
 
