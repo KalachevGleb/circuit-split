@@ -72,20 +72,20 @@ private:
     BasicSemaphore& operator=(const BasicSemaphore& other) = delete;
 
 public:
-    Semaphore(int initialCount = 0)
+    BasicSemaphore(int initialCount = 0)
     {
         assert(initialCount >= 0);
         semaphore_create(mach_task_self(), &m_sema, SYNC_POLICY_FIFO, initialCount);
     }
 
-    ~Semaphore()
+    ~BasicSemaphore()
     {
         semaphore_destroy(mach_task_self(), m_sema);
     }
 
-    void wait()
+    void wait() const
     {
-        semaphore_wait(m_sema); const
+        semaphore_wait(m_sema);
     }
 
     void signal() const
