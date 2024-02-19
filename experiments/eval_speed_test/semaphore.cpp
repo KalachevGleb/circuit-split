@@ -7,4 +7,5 @@ using namespace std;
 
 #ifdef PROFILE_SEMAPHORE
 std::atomic<long> LightweightSemaphore::uptime_(0);
+std::atomic<long> BasicSemaphore::uptime_(0);
 #endif

@@ -116,14 +116,27 @@ class BasicSemaphore
 private:
     mutable sem_t m_sema;
 
+    #ifdef PROFILE_SEMAPHORE
+    static std::atomic<long> uptime_;
+    #endif
+
     BasicSemaphore(const BasicSemaphore& other) = delete;
     BasicSemaphore& operator=(const BasicSemaphore& other) = delete;
 
 public:
     BasicSemaphore(int initialCount = 0)
     {
+        #ifdef PROFILE_SEMAPHORE
+        auto start = std::chrono::high_resolution_clock::now();
+        #endif
+
         assert(initialCount >= 0);
         sem_init(&m_sema, 0, initialCount);
+
+        #ifdef PROFILE_SEMAPHORE
+        auto stop = std::chrono::high_resolution_clock::now();
+        uptime_.fetch_add(std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count());
+        #endif
     }
 
     ~BasicSemaphore()
@@ -133,6 +146,10 @@ public:
 
     void wait() const
     {
+        #ifdef PROFILE_SEMAPHORE
+        auto start = std::chrono::high_resolution_clock::now();
+        #endif
+
         // http://stackoverflow.com/questions/2013181/gdb-causes-sem-wait-to-fail-with-eintr-error
         int rc;
         do
@@ -140,20 +157,53 @@ public:
             rc = sem_wait(&m_sema);
         }
         while (rc == -1 && errno == EINTR);
+
+        #ifdef PROFILE_SEMAPHORE
+        auto stop = std::chrono::high_resolution_clock::now();
+        uptime_.fetch_add(std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count());
+        #endif
     }
 
     void signal() const
     {
+        #ifdef PROFILE_SEMAPHORE
+        auto start = std::chrono::high_resolution_clock::now();
+        #endif
+
         sem_post(&m_sema);
+
+        #ifdef PROFILE_SEMAPHORE
+        auto stop = std::chrono::high_resolution_clock::now();
+        uptime_.fetch_add(std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count());
+        #endif
     }
 
     void signal(int count) const
     {
+        #ifdef PROFILE_SEMAPHORE
+        auto start = std::chrono::high_resolution_clock::now();
+        #endif
+
         while (count-- > 0)
         {
             sem_post(&m_sema);
         }
+
+        #ifdef PROFILE_SEMAPHORE
+        auto stop = std::chrono::high_resolution_clock::now();
+        uptime_.fetch_add(std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count());
+        #endif
     }
+
+    #ifdef PROFILE_SEMAPHORE
+    static long uptime() {
+        return uptime_.load();
+    }
+
+    static void reset_uptime() {
+        uptime_.store(0);
+    }
+    #endif
 };
 
 
