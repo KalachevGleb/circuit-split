@@ -332,7 +332,7 @@ vector<long> main_routine(const char* input_path) {
 
         #ifdef PROFILE_SEMAPHORE
         double compute_loop_time_real = static_cast<double>(compute_loop_profiler.get_real_time()) / (1000 * RUN_COUNT);
-        double compute_loop_time_sema = static_cast<double>(compute_loop_profiler.get_sema_time()) / ((thread_count + 1) * 1000 * RUN_COUNT);
+        double compute_loop_time_sema = static_cast<double>(compute_loop_profiler.get_sema_time()) / (thread_count * 1000 * RUN_COUNT);
 
         printf("Работа с семафорами в главном цикле заняла %3.2lf% времени, а именно %3.2lfms из %3.2lfms\n",
             compute_loop_time_sema / compute_loop_time_real * 100,
@@ -430,7 +430,7 @@ int main(int argc, const char* argv[]) {
     for(int i = 0; i < results.size(); ++i) sum = sum + results[i];
 
     #ifdef IN_SCRIPT
-    printf("%3.3lf\n", static_cast<double>(sum) / RUN_COUNT);
+    printf("%3.3lf\n", static_cast<double>(sum) / (RUN_COUNT * 1000));
     #else
     printf("Mean time: %3.3lfms\n", static_cast<double>(sum) / (RUN_COUNT * 1000));
     #endif
