@@ -15,20 +15,20 @@ def main():
     for i in range(0, len(lines), 3):
         data.append({
             'thread' : int(lines[i].split()[1]),
-            'loss' : int(lines[i].split()[2]),
-            'predicted' : int(lines[i + 1].split()[1]),
+            'losses' : " ".join(lines[i].split()[2:4]),
+            'predicted' : float(lines[i + 1].split()[1]),
             'real' : float(lines[i + 2].split()[1])
         })
 
-    LOSSES = sorted(list(set([exp['loss'] for exp in data])))
+    LOSSES = sorted(list(set([exp['losses'] for exp in data])))
     THREADS = sorted(list(set([exp['thread'] for exp in data])))
 
     data_pred = np.empty((len(LOSSES), len(THREADS)))
     data_real = np.empty((len(LOSSES), len(THREADS)))
 
     for exp in data:
-        data_pred[LOSSES.index(exp['loss']), THREADS.index(exp['thread'])] = exp['predicted']
-        data_real[LOSSES.index(exp['loss']), THREADS.index(exp['thread'])] = exp['real']
+        data_pred[LOSSES.index(exp['losses']), THREADS.index(exp['thread'])] = exp['predicted']
+        data_real[LOSSES.index(exp['losses']), THREADS.index(exp['thread'])] = exp['real']
 
     print('Best real times:')
     print(str(np.amin(data_real, axis=0)) + 'ms')
@@ -40,6 +40,10 @@ def main():
 
     y1s = data_pred / np.max(data_pred, axis=1, keepdims=True)
     y2s = data_real / np.max(data_real, axis=1, keepdims=True)
+
+    print(np.amin(np.sum(np.abs(y1s / y2s - 1), axis=1)) / len(THREADS))
+    print(data[np.argmin(np.sum(np.abs(y1s / y2s - 1), axis=1))])
+
 
     width = 0.35
 
@@ -53,7 +57,6 @@ def main():
 
         ax.set_xticks([i + 1 for i in range(len(x))])
         ax.set_xticklabels(list(map(int, THREADS)))
-
         
         ax.set_xlabel('threads')
         ax.set_ylabel('time')
