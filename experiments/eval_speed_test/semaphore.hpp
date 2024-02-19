@@ -8,6 +8,9 @@
 
 #include <atomic>
 #include <cassert>
+#include <chrono>
+
+#include "defines.hpp"
 
 #if defined(_WIN32)
 //---------------------------------------------------------
@@ -170,8 +173,16 @@ private:
     mutable std::atomic<int> m_count;
     mutable BasicSemaphore m_sema;
 
+    #ifdef PROFILE_SEMAPHORE
+    static std::atomic<long> uptime_;
+    #endif
+
     void waitWithPartialSpinning() const
-    {
+    {   
+        #ifdef PROFILE_SEMAPHORE
+        auto start = std::chrono::high_resolution_clock::now();
+        #endif
+
         int oldCount;
         // Is there a better way to set the initial spin count?
         // If we lower it to 1000, testBenaphore becomes 15x slower on my Core i7-5930K Windows PC,
@@ -189,34 +200,84 @@ private:
         {
             m_sema.wait();
         }
+        #ifdef PROFILE_SEMAPHORE
+        auto stop = std::chrono::high_resolution_clock::now();
+        uptime_.fetch_add(std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count());
+        #endif
     }
 
 public:
+    #ifdef PROFILE_SEMAPHORE
+    static long uptime() {
+        return uptime_.load();
+    }
+
+    static void reset_uptime() {
+        uptime_.store(0);
+    }
+    #endif
+
     LightweightSemaphore(int initialCount = 0) : m_count(initialCount)
     {
+        #ifdef PROFILE_SEMAPHORE
+        auto start = std::chrono::high_resolution_clock::now();
+        #endif
+
         assert(initialCount >= 0);
+
+        #ifdef PROFILE_SEMAPHORE
+        auto stop = std::chrono::high_resolution_clock::now();
+        uptime_.fetch_add(std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count());
+        #endif
     }
 
     bool tryWait() const
     {
+        #ifdef PROFILE_SEMAPHORE
+        auto start = std::chrono::high_resolution_clock::now();
+        #endif
+
         int oldCount = m_count.load(std::memory_order_relaxed);
         return (oldCount > 0 && m_count.compare_exchange_strong(oldCount, oldCount - 1, std::memory_order_acquire));
+
+        #ifdef PROFILE_SEMAPHORE
+        auto stop = std::chrono::high_resolution_clock::now();
+        uptime_.fetch_add(std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count());
+        #endif
     }
 
     void wait() const
     {
+        #ifdef PROFILE_SEMAPHORE
+        auto start = std::chrono::high_resolution_clock::now();
+        #endif
+
         if (!tryWait())
             waitWithPartialSpinning();
+
+        #ifdef PROFILE_SEMAPHORE
+        auto stop = std::chrono::high_resolution_clock::now();
+        uptime_.fetch_add(std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count());
+        #endif
     }
 
     void signal(int count = 1) const
     {
+        #ifdef PROFILE_SEMAPHORE
+        auto start = std::chrono::high_resolution_clock::now();
+        #endif
+
         int oldCount = m_count.fetch_add(count, std::memory_order_release);
         int toRelease = -oldCount < count ? -oldCount : count;
         if (toRelease > 0)
         {
             m_sema.signal(toRelease);
         }
+
+        #ifdef PROFILE_SEMAPHORE
+        auto stop = std::chrono::high_resolution_clock::now();
+        uptime_.fetch_add(std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count());
+        #endif
     }
 };
 

@@ -2,6 +2,7 @@
 #include <string>
 
 #include "common.hpp"
+#include "defines.hpp"
 
 using namespace std;
 

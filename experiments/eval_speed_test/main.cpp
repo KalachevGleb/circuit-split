@@ -10,8 +10,7 @@
 
 #include "semaphore.hpp"
 #include "common.hpp"
-
-#define DEBUG_THREAD 2
+#include "defines.hpp"
 
 using namespace std;
 
@@ -93,6 +92,13 @@ void worker(vector<const Line*> lines,              //Весь "код" из cut
         } 
     }
 
+    // #ifdef PROFILE_SEMAPHORE
+    // SemaphoreProfiler in_loop_profiler;
+    // if(thread == DEBUG_THREAD) {
+    //         in_loop_profiler.start();
+    // }
+    // #endif
+
     for(int worker_iteration = 0; worker_iteration < RUN_COUNT; ++worker_iteration) {
         start_sema_1 -> signal();                       //Гарантия "одновременного" старта
         start_sema_2 -> wait();
@@ -162,6 +168,21 @@ void worker(vector<const Line*> lines,              //Весь "код" из cut
         end_sema -> signal();
     }
 
+    // #ifdef PROFILE_SEMAPHORE
+    // if(thread == DEBUG_THREAD) {
+    //     in_loop_profiler.stop();
+
+    //     double in_loop_profiler_real = static_cast<double>(in_loop_profiler.get_real_time()) / (1000 * RUN_COUNT);
+    //     double in_loop_profiler_sema = static_cast<double>(in_loop_profiler.get_sema_time()) / (1000 * RUN_COUNT);
+
+    //     printf("Работа с семафорами при делегировании задачи воркеру заняла %3.2lf% времени, а именно %3.2lfms из %3.2lfms\n",
+    //         in_loop_profiler_sema / in_loop_profiler_real * 100,
+    //         in_loop_profiler_sema,
+    //         in_loop_profiler_real
+    //     );
+    // }
+    // #endif
+
     return;
 }
 
@@ -205,7 +226,7 @@ void single_thread_worker(vector<const Line*> lines,              //Весь "к
     return;
 }
 
-vector<long> main_routine(const char* input_path) {    
+vector<long> main_routine(const char* input_path) {
     // ====================================================== //
     // Чтение //
     // ====================================================== //
@@ -290,23 +311,46 @@ vector<long> main_routine(const char* input_path) {
         // Прогон в цикле //
         // ====================================================== //
 
+        auto start = std::chrono::high_resolution_clock::now();
+
+        #ifdef PROFILE_SEMAPHORE
+        SemaphoreProfiler compute_loop_profiler;
+        compute_loop_profiler.start();
+        #endif
+
         for(int run = 0; run < RUN_COUNT; ++run) {
             for(int t = 0; t < thread_count; ++t) {
                 start_sema_1.wait();
             }
-
-            auto start = std::chrono::high_resolution_clock::now();
             
             start_sema_2.signal(thread_count);
 
             for(int t = 0; t < thread_count; ++t) {
                 end_sema.wait();
             }
-
-            auto stop = std::chrono::high_resolution_clock::now();
-
-            results.push_back(chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
         }
+
+        #ifdef PROFILE_SEMAPHORE
+        compute_loop_profiler.stop();
+        #endif
+
+        auto stop = std::chrono::high_resolution_clock::now();
+        results.push_back(chrono::duration_cast<std::chrono::microseconds>(stop - start).count());
+        
+        // ====================================================== //
+        // Профайлинг семафоров //
+        // ====================================================== //
+
+        #ifdef PROFILE_SEMAPHORE
+        double compute_loop_time_real = static_cast<double>(compute_loop_profiler.get_real_time()) / (1000 * RUN_COUNT);
+        double compute_loop_time_sema = static_cast<double>(compute_loop_profiler.get_sema_time()) / ((thread_count + 1) * 1000 * RUN_COUNT);
+
+        printf("Работа с семафорами в главном цикле заняла %3.2lf% времени, а именно %3.2lfms из %3.2lfms\n",
+            compute_loop_time_sema / compute_loop_time_real * 100,
+            compute_loop_time_sema,
+            compute_loop_time_real
+        );
+        #endif
 
         // ====================================================== //
         // Очистка //
@@ -334,13 +378,16 @@ vector<long> main_routine(const char* input_path) {
         single_thread_worker(lines, queue_size);
 
         auto stop = std::chrono::high_resolution_clock::now();
-
-        results.push_back(chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
+        results.push_back(chrono::duration_cast<std::chrono::microseconds>(stop - start).count());
     }
 
     for(auto line_ptr: lines) {
         delete line_ptr;
     }
+
+    // ====================================================== //
+    // Готово //
+    // ====================================================== //
 
     return results;
 }
@@ -396,7 +443,7 @@ int main(int argc, const char* argv[]) {
     #ifdef IN_SCRIPT
     printf("%3.3lf\n", static_cast<double>(sum) / RUN_COUNT);
     #else
-    printf("Mean time: %3.3lfms\n", static_cast<double>(sum) / RUN_COUNT);
+    printf("Mean time: %3.3lfms\n", static_cast<double>(sum) / (RUN_COUNT * 1000));
     #endif
 
     return 0;

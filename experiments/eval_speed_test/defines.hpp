@@ -1,0 +1,3 @@
+#define DEBUG_THREAD 2
+#define STATUS_PRINT
+#define PROFILE_SEMAPHORE
