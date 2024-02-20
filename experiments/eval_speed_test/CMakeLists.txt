@@ -1,3 +1,3 @@
 project(eval_speed_test)
 
-add_executable(${PROJECT_NAME} main.cpp common.cpp)
+add_executable(${PROJECT_NAME} main.cpp common.cpp semaphore.cpp)

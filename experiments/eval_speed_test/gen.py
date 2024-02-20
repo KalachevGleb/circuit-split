@@ -11,6 +11,10 @@ IN_SCRIPT = False
 FRIENDLY = True
 MODE = 2
 
+THREAD_COUNT = int(sys.argv[1])
+LOSS = float(sys.argv[2])
+LOSS2 = float(sys.argv[3])
+
 # TODO
 # Комментарии
 
@@ -29,15 +33,71 @@ def tqdm_friendly(args):
         return tqdm(args)
     else:
         return args
+    
+def cut_graph(graph, turn2vertex_id):
+    time_per_thread = [0] * THREAD_COUNT
+
+    for vertex_id in tqdm_friendly(turn2vertex_id):
+
+        vertex = graph.vs[vertex_id]
+        parents = vertex.neighbors(mode='in')
+
+        if len(parents) == 0:
+            vertex['t'] = 0
+            vertex['p'] = 0
+            continue
+
+        proposed_time_per_thread = [None] * THREAD_COUNT
+        for thread in range(THREAD_COUNT):
+            t = time_per_thread[thread]
+            for parent in parents:
+                if parent['p'] != thread:
+                    t += parent['w'] * LOSS + LOSS2
+                else:
+                    t += parent['w']
+
+            proposed_time_per_thread[thread] = t
+
+        thread = np.argmin(proposed_time_per_thread)
+
+        time_per_thread[thread] = proposed_time_per_thread[thread]
+        
+        vertex['p'] = thread
+        vertex['t'] = proposed_time_per_thread[thread]
+
+    cost_greedy = time_per_thread
+
+    return cost_greedy
+
+def possible_steps(graph, turn2vertex_id):
+    pass
+
+
+def reorder(graph):
+    semaphores = [edge for edge in graph.es if edge[0]['p'] != edge[1]['p']]
+
+    turn2vertex_id = []
+
+    for vertex in graph.vs:
+        parents = vertex.neighbors(mode='in')
+
+        good = True
+        for parent in parents:
+            if parent.index not in turn2vertex_id:
+                good = False
+
+                break
+        
+        if good:
+            turn2vertex_id.append(parent.index)
+        
+
+
 
 def main():
     if len(sys.argv) not in [4, 5]:
         print_freindly('Ожидались желаемое число потоков, стоимость мьютекса[, и путь до выходного файла]')
         quit(1)
-
-    THREAD_COUNT = int(sys.argv[1])
-    LOSS = float(sys.argv[2])
-    LOSS2 = float(sys.argv[3])
 
     print_freindly('Чтение графа')
 
@@ -103,37 +163,9 @@ def main():
 
         cost_greedy = time_per_thread
     elif MODE == 2:
-        time_per_thread = [0] * THREAD_COUNT
-
-        for vertex_id in tqdm_friendly(turn2vertex_id):
-
-            vertex = graph.vs[vertex_id]
-            parents = vertex.neighbors(mode='in')
-
-            if len(parents) == 0:
-                vertex['t'] = 0
-                vertex['p'] = 0
-                continue
-
-            proposed_time_per_thread = [None] * THREAD_COUNT
-            for thread in range(THREAD_COUNT):
-                t = time_per_thread[thread]
-                for parent in parents:
-                    if parent['p'] != thread:
-                        t += parent['w'] * LOSS + LOSS2
-                    else:
-                        t += parent['w']
-
-                proposed_time_per_thread[thread] = t
-
-            thread = np.argmin(proposed_time_per_thread)
-
-            time_per_thread[thread] = proposed_time_per_thread[thread]
-            
-            vertex['p'] = thread
-            vertex['t'] = proposed_time_per_thread[thread]
-
-        cost_greedy = time_per_thread
+        cost_greedy = cut_graph(graph=graph, turn2vertex_id=turn2vertex_id)
+    elif MODE == 3:
+        pass
 
     print_freindly('Стоимость потоков:', cost_greedy)
     print_freindly('Overhead:', str(sum(cost_greedy) - np.sum(graph.vs['w'])))
@@ -150,6 +182,7 @@ def main():
     for i in range(len(turn2vertex_id)):                                        #   то есть обратное к turn2vertex_id
         vertex_id2turn[turn2vertex_id[i]] = i
 
+    cross_thread_copies = 0
     for vertex_id in turn2vertex_id: #tqdm(turn2vertex_id):                                      #Последовательно дампим расписание в cut.txt в соотвествии с правилом, описанным
                                                                                 #   в комментарии к структуре Line в main.cpp
         vertex = graph.vs[vertex_id]
@@ -167,12 +200,16 @@ def main():
 
             if parent['p'] != vertex['p']:
                 fd.write(str(-vertex_id2turn[parent.index] - 1))
+                
+                cross_thread_copies += 1
             else:
                 fd.write(str(vertex_id2turn[parent.index]))
 
         fd.write('\n')
 
     fd.close()
+
+    print_freindly('Передач между потоками:', cross_thread_copies)
 
     print_freindly('Готово! Have a nice day :)')
 
