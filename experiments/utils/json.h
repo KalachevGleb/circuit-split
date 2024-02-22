@@ -25,9 +25,35 @@ public:
         Object
     };
 
+    explicit JSON(Type t) {
+        switch (t) {
+        case String:
+            data = "";
+            break;
+        case Integer:
+            data = int64_t(0);
+            break;
+        case Double:
+            data = double(0);
+            break;
+        case Boolean:
+            data = bool(false);
+            break;
+        case Null:
+            data = nullptr;
+            break;
+        case Array:
+            data = std::vector<JSON>();
+            break;
+        case Object:
+            data = std::map<JSON, JSON>();
+            break;
+        }
+    }
+
     //! \brief Constructs a JSON object from a string.
     //! \param str The string to construct the JSON object from.
-    JSON(const std::string& str){
+    JSON(const std::string& str) {
         data = str;
     }
     //! \brief Constructs a JSON object from a string.
@@ -380,17 +406,15 @@ public:
     const JSON& at(const I& index) const {
         return std::visit([&index](auto&& arg) -> const JSON& {
             using T = std::decay_t<decltype(arg)>;
-            if constexpr (std::is_same_v<T, std::vector<JSON>>) {
+            if constexpr (std::is_same_v<T, std::vector<JSON>> && std::is_integral_v<I>) {
                 if constexpr (std::is_integral_v<I>) {
                     if (index < 0) {
                         index += arg.size();
                     } else if (index >= arg.size()) {
                         throw std::out_of_range("JSON::at(" + std::to_string(index) + "): index out of range"
-                                                                " (size = " + std::to_string(arg.size()) + ")");
+                                                                                      " (size = " + std::to_string(arg.size()) + ")");
                     }
                     return arg[index];
-                } else {
-                    throw std::runtime_error("JSON::at: type mismatch");
                 }
             } else if constexpr (std::is_same_v<T, std::map<JSON, JSON>>) {
                 auto it = arg.find(index);
@@ -516,4 +540,3 @@ private:
 };
 
 std::ostream &operator<<(std::ostream &out, const JSON &json);
-

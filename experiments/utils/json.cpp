@@ -349,7 +349,7 @@ JSON JSON::load(const std::string& filename) {
     str.reserve(in.tellg());
     in.seekg(0, std::ios::beg);
     str.assign((std::istreambuf_iterator<char>(in)),
-                std::istreambuf_iterator<char>());
+               std::istreambuf_iterator<char>());
     return parse(str);
 }
 
@@ -364,7 +364,7 @@ void JSON::save(const std::string& filename, bool wrapLines) const {
     if (!out.is_open()) {
         throw runtime_error("Cannot not open file " + filename);
     }
-    write(out, wrapLines);    
+    write(out, wrapLines);
 }
 /////////////////
 JSON::operator bool() const {
@@ -408,13 +408,13 @@ JSON& JSON::operator+=(const JSON& rhs) {
         if constexpr (std::is_arithmetic_v<T> && std::is_arithmetic_v<R>) {
             *this = arg + rhs;
         } if constexpr (std::is_same_v<T, std::string> && std::is_same_v<R, std::string>) {
-            arg += rhs;
-        } else if constexpr (std::is_same_v<T, std::vector<JSON>> && std::is_same_v<R, std::vector<JSON>>) {
-            arr().reserve(arr().size() + rhs.size());
-            arr().insert(arr().end(), rhs.begin(), rhs.end());
-        } else {
-            throw std::runtime_error("JSON::operator+: type mismatch");
-        }
+        arg += rhs;
+    } else if constexpr (std::is_same_v<T, std::vector<JSON>> && std::is_same_v<R, std::vector<JSON>>) {
+        arr().reserve(arr().size() + rhs.size());
+        arr().insert(arr().end(), rhs.begin(), rhs.end());
+    } else {
+        throw std::runtime_error("JSON::operator+: type mismatch");
+    }
     }, data, rhs.data);
     return *this;
 }
@@ -514,7 +514,7 @@ JSON& JSON::operator&=(const JSON& rhs) { //bitwise and or key set intersection
     std::visit([this](auto&& arg, auto &&rhs) {
         using T = std::decay_t<decltype(arg)>;
         using R = std::decay_t<decltype(rhs)>;
-        if constexpr (std::is_integral_v<T> && std::is_integral_v<R>) {
+        if constexpr (std::is_integral_v<T> && std::is_integral_v<R> && std::is_same_v<T, R>) {
             arg &= rhs;
         } else if constexpr (std::is_same_v<T, std::map<JSON, JSON>> && std::is_same_v<R, std::vector<JSON>>) {
             std::map<JSON, JSON> new_map, &curr_map = obj();
@@ -525,20 +525,20 @@ JSON& JSON::operator&=(const JSON& rhs) { //bitwise and or key set intersection
             }
             arg = std::move(new_map);
         } else if constexpr (std::is_same_v<T, std::vector<JSON>> && std::is_same_v<R, std::vector<JSON>>) {
-                std::vector<JSON> new_arr, &curr_arr = arr();
-                std::sort(curr_arr.begin(), curr_arr.end());
-                for (auto &key: rhs) {
-                    if (std::binary_search(curr_arr.begin(), curr_arr.end(), key))
-                        new_arr.push_back(key);
-                }
-                arg = std::move(new_arr);
+            std::vector<JSON> new_arr, &curr_arr = arr();
+            std::sort(curr_arr.begin(), curr_arr.end());
+            for (auto &key: rhs) {
+                if (std::binary_search(curr_arr.begin(), curr_arr.end(), key))
+                    new_arr.push_back(key);
+            }
+            arg = std::move(new_arr);
         } else if constexpr (std::is_same_v<T, std::vector<JSON>> && std::is_same_v<R, std::map<JSON, JSON>>) {
-                std::vector<JSON> new_arr, &curr_arr = arr();
-                for (auto &key: curr_arr) {
-                    if (rhs.find(key) != rhs.end())
-                        new_arr.push_back(key);
-                }
-                arg = std::move(new_arr);
+            std::vector<JSON> new_arr, &curr_arr = arr();
+            for (auto &key: curr_arr) {
+                if (rhs.find(key) != rhs.end())
+                    new_arr.push_back(key);
+            }
+            arg = std::move(new_arr);
         } else {
             throw std::runtime_error("JSON::operator&: type mismatch");
         }
@@ -550,7 +550,7 @@ JSON& JSON::operator|=(const JSON& rhs) { //bitwise OR or key set union
     std::visit([this](auto&& arg, auto &&rhs) {
         using T = std::decay_t<decltype(arg)>;
         using R = std::decay_t<decltype(rhs)>;
-        if constexpr (std::is_integral_v<T> && std::is_integral_v<R>) {
+        if constexpr (std::is_integral_v<T> && std::is_integral_v<R> && std::is_same_v<T, R>) {
             arg |= rhs;
         } else if constexpr (std::is_same_v<T, std::map<JSON, JSON>> && std::is_same_v<R, std::map<JSON, JSON>>) {
             arg.insert(rhs.begin(), rhs.end());
@@ -575,7 +575,7 @@ JSON& JSON::operator^=(const JSON& rhs) { //bitwise XOR or key set symmetric dif
     std::visit([this](auto&& arg, auto &&rhs) {
         using T = std::decay_t<decltype(arg)>;
         using R = std::decay_t<decltype(rhs)>;
-        if constexpr (std::is_integral_v<T> && std::is_integral_v<R>) {
+		if constexpr (std::is_integral_v<T> && std::is_integral_v<R> && std::is_same_v<T, R>) {
             arg ^= rhs;
         } else if constexpr (std::is_same_v<T, std::map<JSON, JSON>> && std::is_same_v<R, std::map<JSON, JSON>>) {
             for (auto &key: rhs)
