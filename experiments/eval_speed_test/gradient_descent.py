@@ -20,7 +20,7 @@ STEP_COUNT = 100
 # TODO
 # Комментарии
 
-filename = 'dep_graph.json'
+filename = 'blob/CONTAINER_SET_8_0_1.json'
 
 def sigmoid(x):
   return 1 / (1 + np.exp(-x))

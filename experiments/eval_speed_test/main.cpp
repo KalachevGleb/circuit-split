@@ -101,7 +101,7 @@ void worker(vector<const Line*> lines,              //Весь "код" из cut
         start_sema_2 -> wait();
 
         for(int line_iter = 0; line_iter < line_queue.size(); ++line_iter) {    //Большой кусок кода про последовалельную симуляцию работы вершин ТОЛЬКО текущего потока
-            volatile auto line_ptr = line_queue[line_iter];
+            auto line_ptr = line_queue[line_iter];
 
             #ifdef DEBUG_PRINT
             if(thread == DEBUG_THREAD) {
@@ -109,7 +109,7 @@ void worker(vector<const Line*> lines,              //Весь "код" из cut
             }
             #endif
 
-            volatile int len_dep = (line_ptr -> sync_deps).size();               //Обрабатываем зависимости между потоками
+            int len_dep = (line_ptr -> sync_deps).size();               //Обрабатываем зависимости между потоками
             for(int dep_iter = 0; dep_iter < len_dep; ++dep_iter) {
                 int dep = (line_ptr -> sync_deps)[dep_iter];
 
@@ -121,7 +121,7 @@ void worker(vector<const Line*> lines,              //Весь "код" из cut
                 }
                 #endif
 
-                volatile int data_pos = 0;
+                int data_pos = 0;
                 for(size_t i = 0; i < lines[dep] -> data.size(); ++i, ++data_pos) {
                     if(data_pos >= line_ptr -> weight) {
                         data_pos = 0;
@@ -182,7 +182,7 @@ void single_thread_worker(vector<const Line*> lines,              //Весь "к
         
         int queue_len = lines.size();
         for(int line_iter = 0; line_iter < queue_len; ++line_iter) {    //Большой кусок кода про последовалельную симуляцию работы вершин ТОЛЬКО текущего потока
-            volatile auto line_ptr = lines[line_iter];
+            auto line_ptr = lines[line_iter];
 
             #ifdef DEBUG_PRINT
             printf("%d", line_ptr -> index);
@@ -190,13 +190,13 @@ void single_thread_worker(vector<const Line*> lines,              //Весь "к
             
             int len_dep = (line_ptr -> forward_deps).size();                //Обрабатываем зависимости внутри потока
             for(int dep_iter = 0; dep_iter < len_dep; ++dep_iter) {
-                volatile int dep = (line_ptr -> forward_deps)[dep_iter];
+                int dep = (line_ptr -> forward_deps)[dep_iter];
                 
                 #ifdef DEBUG_PRINT
                 printf(" %d", dep);
                 #endif
 
-                volatile int data_pos = 0;
+                int data_pos = 0;
                 for(size_t i = 0; i < lines[dep] -> data.size(); ++i, ++data_pos) {
                     if(data_pos >= line_ptr -> weight) {
                         data_pos = 0;

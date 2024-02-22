@@ -8,7 +8,6 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 # TODO
-# За кождый поток делать по шагу
 # Действительно поптимальный reorder()
 # Перестановка алгоритмов
 # Модули в схеме - группировка под кэши
@@ -25,7 +24,7 @@ LOSS2 = float(sys.argv[3])
 # TODO
 # Комментарии
 
-filename = 'blob/dep_graph.json' #'blob/dep_graph.json'
+filename = 'blob/CONTAINER_SET_8_0_1.json' #'blob/dep_graph.json'
 
 def print_freindly(*args):
     if FRIENDLY:
@@ -76,43 +75,134 @@ def cut_graph(graph, turn2vertex_id):
 
     return cost_greedy
 
-def dummy_reorder(graph):
-    turn2vertex_id = np.full(len(graph.vs), dtype=int, fill_value=-1)
-    buff = [vertex.index for vertex in graph.vs if vertex['w'] == 0]
-    turn2vertex_id[:len(buff)] = np.array(buff, dtype=int)
+def possible_steps(graph, turn2vertex_id):
+    pass
+
+
+def reorder(graph):
+    turn2vertex_id = [vertex.index for vertex in graph.vs if len(vertex.neighbors(mode='in')) == 0]
     
-    curr_thread = 0
-    iter = len(buff)
-    t2v_set = set(turn2vertex_id)
+    t2v_id_size_iter = len(turn2vertex_id)
+    turn2vertex_id += [-1] * (len(graph.vs) - t2v_id_size_iter)
+    turn2vertex_id = np.array(turn2vertex_id, dtype=int)
+
+    time_per_thread = [0] * THREAD_COUNT
 
     pbar = tqdm(total=len(turn2vertex_id))
-    while iter != len(graph.vs):
+    while t2v_id_size_iter != len(graph.vs):
 
-        for vertex in graph.vs:
-            if vertex.index in t2v_set:
-                continue
+        #print(t2v_id_size_iter, 'of', len(graph.vs))
+        
+        previous_t2v_id_size_iter = t2v_id_size_iter
+        while True:
+            improved = False
+            for vertex_id in turn2vertex_id[:t2v_id_size_iter]:
 
-            if vertex['p'] != curr_thread:
+                vertex = graph.vs[vertex_id]
+                children = vertex.neighbors(mode='out')
+
+                for child in children:
+                    if child.index in turn2vertex_id[:t2v_id_size_iter]:
+                        continue
+
+                    parents = child.neighbors(mode='in')
+                    
+                    good = True
+                    for parent in parents:
+                        #if parent['p'] != child['p']:
+                        if parent['p'] != child['p'] or (parent.index not in turn2vertex_id[:previous_t2v_id_size_iter]): ###!!!!!!!!!!!!!!!!!!!
+                            good = False
+
+                            break
+                    
+                    if good:
+                        turn2vertex_id[t2v_id_size_iter] = child.index
+                        t2v_id_size_iter += 1
+                        
+                        improved = True
+            #print(1)
+            if not improved:
+                break
+
+
+
+
+
+
+        added = turn2vertex_id[previous_t2v_id_size_iter:t2v_id_size_iter]
+
+        costs = [0] * THREAD_COUNT
+        for vertex_id in added:
+            vertex = graph.vs[vertex_id]
+
+            thread = vertex['p']
+            
+            for parent in vertex.neighbors(mode='in'):
+                if thread == parent['p']:
+                    costs[thread] += parent['w']
+                else:
+                    costs[thread] += LOSS * parent['w'] + LOSS2
+
+
+
+
+
+
+        goal = np.amin(costs)
+
+        skip_costs = [0] * THREAD_COUNT
+        not_skipped = []
+        for vertex_id in added:
+            vertex = graph.vs[vertex_id]
+
+            thread = vertex['p']
+            if skip_costs[thread] > goal:
                 continue
             
-            good = True
+            not_skipped.append(vertex_id)
+            
             for parent in vertex.neighbors(mode='in'):
-                if parent.index not in t2v_set:
-                    good = False
-                    break
+                if thread == parent['p']:
+                    skip_costs[thread] += parent['w']
+                else:
+                    skip_costs[thread] += LOSS * parent['w'] + LOSS2
 
-            if good:
-                turn2vertex_id[iter] = vertex.index
-                t2v_set.add(vertex.index)
-                iter += 1
-                pbar.update(1)
-                break
-                
-        curr_thread = (curr_thread + 1) % THREAD_COUNT
+
+
+
+
+
+
+
+
+
+
+        turn2vertex_id[previous_t2v_id_size_iter:previous_t2v_id_size_iter + len(not_skipped)] = not_skipped
+        t2v_id_size_iter = previous_t2v_id_size_iter + len(not_skipped)
+
+        
+
+
+
+
+        for vertex_id in turn2vertex_id[:t2v_id_size_iter]:
+            vertex = graph.vs[vertex_id]
+
+            children = vertex.neighbors(mode='out')
+
+            for child in children:
+                if child['p'] == vertex['p']:
+                    continue
+
+                if child.index not in turn2vertex_id[:t2v_id_size_iter]:
+                    turn2vertex_id[t2v_id_size_iter] = child.index
+                    t2v_id_size_iter += 1
+
+        pbar.update(t2v_id_size_iter - previous_t2v_id_size_iter)
+
     pbar.close()
 
     return turn2vertex_id.tolist()
-                    
     
 def main():
     if len(sys.argv) not in [4, 5]:
@@ -190,7 +280,7 @@ def main():
         cost_greedy = cut_graph(graph=graph, turn2vertex_id=turn2vertex_id)
         for i in range(15):
             print('Стоимость:', np.amax(cost_greedy))
-            turn2vertex_id = dummy_reorder(graph)
+            turn2vertex_id = reorder(graph)
             cost_greedy = cut_graph(graph=graph, turn2vertex_id=turn2vertex_id)
 
     print_freindly('Стоимость:', cost_greedy)
