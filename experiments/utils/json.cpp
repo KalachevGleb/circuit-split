@@ -328,13 +328,13 @@ JSON JSON::parse(const std::string& str, bool defaultToString) {
         if (defaultToString) {
             return str;
         }
-        throw std::runtime_error("JSON error at position " + position(b, curr));
+        throw JSONError("JSON error at position " + position(b, curr));
     }
     if (*e) {
         if (defaultToString) {
             return str;
         }
-        throw std::runtime_error("EOF expected at position " + position(b, e));
+        throw JSONError("EOF expected at position " + position(b, e));
     }
     return res;
 }
@@ -342,7 +342,7 @@ JSON JSON::parse(const std::string& str, bool defaultToString) {
 JSON JSON::load(const std::string& filename) {
     ifstream in(filename);
     if (!in.is_open()) {
-        throw runtime_error("Cannot not open input file `" + filename + "`");
+        throw JSONError("Cannot not open input file `" + filename + "`");
     }
     std::string str;
     in.seekg(0, std::ios::end);
@@ -362,7 +362,7 @@ void JSON::write(std::ostream& out, bool wrapLines) const {
 void JSON::save(const std::string& filename, bool wrapLines) const {
     ofstream out(filename);
     if (!out.is_open()) {
-        throw runtime_error("Cannot not open file " + filename);
+        throw JSONError("Cannot not open file " + filename);
     }
     write(out, wrapLines);
 }
@@ -640,3 +640,4 @@ std::ostream &operator<<(std::ostream &out, const JSON &json) {
     json.write(out, true);
     return out;
 }
+

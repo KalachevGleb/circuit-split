@@ -12,6 +12,12 @@
 #include <version>
 #include <concepts>
 
+
+class JSONError : public std::runtime_error {
+public:
+    using std::runtime_error::runtime_error;
+};
+
 class JSON {
     std::variant<std::nullptr_t, int64_t, double, bool, std::string, std::vector<JSON>, std::map<JSON, JSON>> data;
 public:
@@ -49,6 +55,33 @@ public:
             data = std::map<JSON, JSON>();
             break;
         }
+    }
+
+    static const char* type_name(Type t) {
+        switch (t) {
+            case String:
+                return "string";
+            case Integer:
+                return "integer";
+            case Double:
+                return "double";
+            case Boolean:
+                return "boolean";
+            case Null:
+                return "null";
+            case Array:
+                return "array";
+            case Object:
+                return "object";
+        }
+        return "<invalid type>";
+    }
+    static bool type_convertible(Type from, Type to) {
+        if (from == to || to == String)
+            return true;
+        if (from == Integer && to == Double)
+            return true;
+        return false;
     }
 
     //! \brief Constructs a JSON object from a string.
@@ -170,22 +203,7 @@ public:
     //! \brief Returns the type of the JSON object as a string.
     //! \return The type of the JSON object as a string.
     const char* typeStr() const {
-        switch (type()) {
-            case Type::String:
-                return "string";
-            case Type::Integer:
-                return "integer";
-            case Type::Double:
-                return "double";
-            case Type::Boolean:
-                return "boolean";
-            case Type::Null:
-                return "null";
-            case Type::Array:
-                return "array";
-            case Type::Object:
-                return "object";
-        }
+        return type_name(type());
     }
 
     std::string& str() {
@@ -291,6 +309,42 @@ public:
         return out;
     }
 
+    bool toType(Type t){
+        Type current = type();
+        if (current == t) return true;
+        switch(t){
+            case Type::String:
+                *this = toString();
+                return true;
+            case Type::Double: {
+                double d;
+                if (tryGet(d)) {
+                    *this = d;
+                    return true;
+                }
+                return false;
+            }
+            case Type::Integer: {
+                int64_t i;
+                if (tryGet(i)) {
+                    *this = i;
+                    return true;
+                }
+                return false;
+            }
+            case Type::Boolean: {
+                bool b;
+                if (tryGet(b)) {
+                    *this = b;
+                    return true;
+                }
+                return false;
+            }
+            default:
+                return false;
+        }
+    }
+
     template<std::integral I>
     bool tryGet(I& out) const {
         return std::visit([&out](auto&& arg) -> bool {
@@ -307,7 +361,7 @@ public:
     bool tryGet(F& out) const {
         return std::visit([&out](auto&& arg) -> bool {
             using T = std::decay_t<decltype(arg)>;
-            if constexpr (std::is_same_v<T, double> || std::is_same_v<T, int64_t> || std::is_same_v<T, bool>) {
+            if constexpr (std::is_same_v<T, double> || std::is_same_v<T, int64_t>) {
                 out = static_cast<F>(arg);
                 return true;
             } else {
@@ -540,3 +594,5 @@ private:
 };
 
 std::ostream &operator<<(std::ostream &out, const JSON &json);
+
+
