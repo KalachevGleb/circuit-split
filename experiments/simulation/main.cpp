@@ -9,6 +9,7 @@
 #include <any>
 #include <random>
 #include <fstream>
+#include <sstream>
 
 #include "timer.h"
 #include "json.h"
@@ -65,15 +66,19 @@ struct CircuitGraph {
         nthreads = int(schedule.size());
     }
 
-    void gen_eval_thread(const string& fn, int thread_id) {
-        ofstream file(fn);
-        file << "#include \"gen_circuit_impl.h\"\n\n";
-        file << "using namespace std;\n\n";
-        file << "void CircuitImpl::eval_"<<thread_id << "(int thread_id) {\n";
-        int wait_point_i = 0;
-        for (auto [type, j]: schedule[thread_id]) {
+    void gen_eval_thread(const string& fn, const string& func_name, int thread_id, int start, int end, int& wait_point_i, bool append) {
+        ofstream file(fn, append ? ios::app : ios::trunc);
+        if (!append) {
+            file << "#include \"gen_circuit_impl.h\"\n\n";
+            file << "using namespace std;\n\n";
+        }
+        //file << "void CircuitImpl::eval_"<<thread_id << "() {\n";
+        file << "void CircuitImpl::"<<func_name<<"() {\n";
+        //int wait_point_i = 0;
+        for (int i = start; i < end; i++) {
+            auto [type, j] = schedule[thread_id][i];
             if (type == 0) {
-                file << "    state.node_" << j << ".calc(";
+                file << "    state.node_" << j << ".calc_P<" << j << ">(";
                 for (size_t dep_i = 0; dep_i < deps[j].size(); dep_i++) {
                     if (dep_i > 0) file << ", ";
                     file << "state.node_" << deps[j][dep_i];
@@ -96,7 +101,7 @@ struct CircuitGraph {
         file << "}\n";
     }
 
-    void gen_code(const string &fn) {
+    void gen_code(const string &fn, int maxChunkSize) {
         ofstream file(fn+"_impl.h"), cppfile(fn+".cpp");
         file << "#include \"circuit.h\"\n";
         file << "#include <thread>\n";
@@ -110,8 +115,30 @@ struct CircuitGraph {
             file << "        Node<"<<node_weights[node_id]<<"> node_" << node_id << ";\n";
         }
         file << "    } state;\n";
+        int maxFiles = max<int>(1, std::thread::hardware_concurrency()*2);
+        vector<bool> used(maxFiles, false);
+        int curr_file = 0;
         for (int i = 0; i < nthreads; i++) {
-            file << "    void eval_"<<i<<"(int thread_id);\n";
+            int wait_point = 0, size = int(schedule[i].size());
+            if (maxChunkSize && maxChunkSize < size) {
+                int nchunks = (size + maxChunkSize - 1) / maxChunkSize;
+                stringstream evalfunc;
+                evalfunc << "    void eval_"<<i<<"() {\n";
+                for (int j = 0; j < nchunks; j++) {
+                    auto start = j * maxChunkSize, end = min((j + 1) * maxChunkSize, size);
+                    string funcname = "eval_" + to_string(i) + "_chunk_" + to_string(j);
+                    file << "    void " << funcname << "();\n";
+                    evalfunc << "        " << funcname << "();\n";
+                    gen_eval_thread(fn+"_eval_part"+to_string(curr_file)+".cpp", funcname, i, start, end, wait_point, used[curr_file]);
+                    used[curr_file] = true;
+                    curr_file = (curr_file + 1) % maxFiles;
+                }
+                evalfunc << "    }\n";
+                file << evalfunc.str();
+            } else {
+                file << "    void eval_"<<i<<"();\n";
+                gen_eval_thread(fn+"_eval"+ to_string(i)+".cpp", "eval_"+to_string(i), i, 0, size, wait_point, false);
+            }
         }
         file << "    CircuitImpl() {\n";
         for (int i=0; i<nthreads; i++) {
@@ -127,7 +154,7 @@ struct CircuitGraph {
         file << "    void eval(int thread_id) override {\n";
         file << "        switch(thread_id) {\n";
         for (int thread_id = 0; thread_id < nthreads; thread_id++) {
-            file << "            case " << thread_id << ": return eval_" << thread_id << "(thread_id);\n";
+            file << "            case " << thread_id << ": return eval_" << thread_id << "();\n";
         }
         file << "        }\n";
         file << "    }\n";
@@ -137,9 +164,9 @@ struct CircuitGraph {
         cppfile << "unique_ptr<Circuit> create_circuit() {\n";
         cppfile << "    return make_unique<CircuitImpl>();\n";
         cppfile << "}\n";
-        for (int i = 0; i < nthreads; i++) {
-            gen_eval_thread(fn + "_eval" + to_string(i) + ".cpp", i);
-        }
+        //for (int i = 0; i < nthreads; i++) {
+        //    gen_eval_thread(fn + "_eval" + to_string(i) + ".cpp", i);
+        //}
     }
 };
 
@@ -149,9 +176,10 @@ int main(int argc, char *argv[]) {
     // argv[2] is the temporary directory to write the generated code
     // options:
     Options options = {
+        {"output", "o", JSON::String, "Output file for test results (used with -r); if not specified, output to stdout", ""},
         {"verbose", "v", JSON::Boolean, "Verbose output", false},
         {"run", "r", JSON::Boolean, "Run the generated code", false},
-        {"output", "o", JSON::String, "Output file for test results (used with -r); if not specified, output to stdout", ""},
+        {"chunk-size", "", JSON::Integer, "Maximum number of rows in one evaluation function chunk", 1000},
         {"debug", "d", JSON::Boolean, "Compile generated code with debug flags", false},
         {"rebuild", "B", JSON::Boolean, "Clean the build directory before generating code", false},
         //{"profile", "p", JSON::Boolean, "Compile generated code with profiling flags (e.g. -pg)", false},
@@ -195,6 +223,7 @@ int main(int argc, char *argv[]) {
     }
 
     auto work_path = args["output_path"].str();
+    int maxChunkSize = args["chunk-size"].as<int>();
     if (work_path.empty()) {
         work_path = ".";
     }
@@ -242,7 +271,7 @@ int main(int argc, char *argv[]) {
     }
     // generate the code
     timer.reset();
-    graph.gen_code(output_path+"gen_circuit");
+    graph.gen_code(output_path+"gen_circuit", maxChunkSize);
     if (verbose) {
         cout << "Code generation time: " << timer.getTime() << " s" << endl;
     }

@@ -125,7 +125,7 @@ void printUsage(const string& prog, const vector<Option>& positionalArgs, const 
         cout << "Positional arguments:" << endl;
         for (auto &arg: positionalArgs) {
             cout << "  " << arg.name << ": " << JSON::type_name(arg.type) << " \t " << arg.description;
-            if (arg.def.type() != JSON::Null) {
+            if (arg.def.type() != JSON::Null && (arg.type != JSON::Boolean || arg.def.b()) && (arg.type != JSON::String || !arg.def.str().empty())) {
                 cout << " (default: " << arg.def << ")";
             }
             cout << endl;
@@ -138,7 +138,7 @@ void printUsage(const string& prog, const vector<Option>& positionalArgs, const 
                 cout << ", -" << opt.short_name;
             }
             cout << ": " << JSON::type_name(opt.type) << " \t " << opt.description;
-            if (opt.def.type() != JSON::Null) {
+            if (opt.def.type() != JSON::Null && (opt.type != JSON::Boolean || opt.def.b()) && (opt.type != JSON::String || !opt.def.str().empty())) {
                 cout << " (default: " << opt.def << ")";
             }
             cout << endl;

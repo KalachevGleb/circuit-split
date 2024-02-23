@@ -3,6 +3,11 @@ cmake_minimum_required(VERSION 3.16)
 
 set(CMAKE_CXX_STANDARD 20)
 
+# if config is not set, set it to release
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
 file(GLOB ${PROJECT_NAME}_SRC gen_circuit*.cpp)
 
 add_executable(simulator sim.cpp ${${PROJECT_NAME}_SRC})
