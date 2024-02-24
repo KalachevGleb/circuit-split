@@ -150,6 +150,7 @@ struct CircuitGraph {
         file << "    }\n";
 
         file << "    int num_threads() override { return " << nthreads << "; }\n";
+        file << "    int num_nodes() override { return " << num_nodes << "; }\n";
 
         file << "    void eval(int thread_id) override {\n";
         file << "        switch(thread_id) {\n";
