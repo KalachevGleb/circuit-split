@@ -4,6 +4,7 @@
 // #define PROFILE
 #define IN_SCRIPT
 #define STATUS_PRINT
-#define PROFILE
-#define PROFILE_SEMAPHORE
+// #define PROFILE
+// #define PROFILE_SEMAPHORE
 #define DEBUG_THREAD 1
+#define RUN_COUNT 50
