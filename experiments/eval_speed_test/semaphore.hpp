@@ -117,7 +117,7 @@ private:
     mutable sem_t m_sema;
 
     #ifdef PROFILE_SEMAPHORE
-    static std::atomic<long> uptime_;
+    static std::atomic<uint64_t> uptime_;
     #endif
 
     BasicSemaphore(const BasicSemaphore& other) = delete;
@@ -196,7 +196,7 @@ public:
     }
 
     #ifdef PROFILE_SEMAPHORE
-    static long uptime() {
+    static uint64_t uptime() {
         return uptime_.load();
     }
 
@@ -224,7 +224,7 @@ private:
     mutable BasicSemaphore m_sema;
 
     #ifdef PROFILE_SEMAPHORE
-    static std::atomic<long> uptime_;
+    static std::atomic<uint64_t> uptime_;
     #endif
 
     void waitWithPartialSpinning() const
@@ -258,7 +258,7 @@ private:
 
 public:
     #ifdef PROFILE_SEMAPHORE
-    static long uptime() {
+    static uint64_t uptime() {
         return uptime_.load();
     }
 

@@ -12,10 +12,10 @@ std::vector<int> split_string(std::string str);
 
 #ifdef PROFILE_SEMAPHORE
 class SemaphoreProfiler {
-    long sema_time;
-    long real_time;
+    uint64_t sema_time;
+    uint64_t real_time;
 
-    long sema_start;
+    uint64_t sema_start;
     std::chrono::time_point<std::chrono::high_resolution_clock> real_start;
 
     bool running;
@@ -45,11 +45,11 @@ public:
         real_time = 0;
     }
 
-    long get_sema_time() {
+    uint64_t get_sema_time() {
         return sema_time;
     }
 
-    long get_real_time() {
+    uint64_t get_real_time() {
         return real_time;
     }
 };

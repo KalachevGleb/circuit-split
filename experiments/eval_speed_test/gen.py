@@ -25,7 +25,7 @@ LOSS2 = float(sys.argv[3])
 # TODO
 # Комментарии
 
-filename = 'blob/dep_graph.json' #'blob/dep_graph.json'
+filename = 'blob/CONTAINER_SET_8_0_1.json' 
 
 def print_freindly(*args):
     if FRIENDLY:
@@ -76,7 +76,7 @@ def cut_graph(graph, turn2vertex_id):
 
     return cost_greedy
 
-def dummy_reorder(graph):
+def dummy_reorder(graph): 
     turn2vertex_id = np.full(len(graph.vs), dtype=int, fill_value=-1)
     buff = [vertex.index for vertex in graph.vs if vertex['w'] == 0]
     turn2vertex_id[:len(buff)] = np.array(buff, dtype=int)
@@ -112,7 +112,69 @@ def dummy_reorder(graph):
     pbar.close()
 
     return turn2vertex_id.tolist()
-                    
+
+def dummy_reorder2(graph): #WIP, doesn't work
+    turn2vertex_id = np.full(len(graph.vs), dtype=int, fill_value=-1)
+    buff = [vertex.index for vertex in graph.vs if vertex['w'] == 0]
+    turn2vertex_id[:len(buff)] = np.array(buff, dtype=int)
+    
+    curr_thread = 0
+    iter = len(buff)
+    #unused_children = [set([vertex_id for vertex_id in turn2vertex_id[:len(buff)] if graph.vs[vertex_id]['p'] == thread]) for thread in range(THREAD_COUNT)]
+    last_layer = set(buff)
+    unused_children = [set()] * THREAD_COUNT
+
+    pbar = tqdm(total=len(turn2vertex_id))
+    while iter != len(graph.vs):
+
+        found = False
+        for vertex_id in unused_children[curr_thread].copy():
+            vertex = graph.vs[vertex_id]
+
+            if vertex['p'] != curr_thread:
+                continue
+            
+            turn2vertex_id[iter] = vertex_id
+            iter += 1
+
+            unused_children[curr_thread].remove(vertex_id)
+            last_layer.add(vertex_id)
+
+            for parent in vertex.neighbors(mode='in'):
+
+                has_child = False
+                for child in parent.neighbors(mode='out'):
+
+                    if child.index in set.union(*unused_children):
+                        has_child = True
+                        break
+
+                if not has_child:
+                    last_layer.remove(parent.index)
+
+            found = True
+            pbar.update(1)
+            break
+
+        if not found:
+            unused_children = [set()] * THREAD_COUNT
+
+            last_layer_set = set(last_layer)    
+            for vertex_id in last_layer_set:
+                for child in graph.vs[vertex_id].neighbors(mode='out'):
+
+                    # if child.index in last_layer_set:
+                    #     continue
+
+                    parents = [parent.index for parent in child.neighbors(mode='in')]
+
+                    if set(parents).issubset(last_layer_set):
+                        unused_children[child['p']].add(child.index)
+
+        curr_thread = (curr_thread + 1) % THREAD_COUNT
+    pbar.close()
+
+    return turn2vertex_id.tolist()                
     
 def main():
     if len(sys.argv) not in [4, 5]:
@@ -140,14 +202,14 @@ def main():
 
     if MODE == 1:
         single_thread_time = np.sum(graph.vs['w'])
-    if MODE in [2, 3]:
+    if MODE in [2, 3, 4]:
         single_thread_time = np.sum(np.array(graph.vs['w'], dtype=np.int64) * np.array([len(vertex.neighbors(mode='out')) for vertex in graph.vs], dtype=np.int64))
 
     print_freindly('Стоимость однопоточного вычисления:', single_thread_time)
 
     print_freindly('Использую жадный алгоритм')
     
-    print_freindly('Гафи интерпретируется в режиме', MODE)
+    print_freindly('Графы интерпретируется в режиме', MODE)
 
     if MODE == 1:
         time_per_thread = [0] * THREAD_COUNT
@@ -192,6 +254,12 @@ def main():
             print('Стоимость:', np.amax(cost_greedy))
             turn2vertex_id = dummy_reorder(graph)
             cost_greedy = cut_graph(graph=graph, turn2vertex_id=turn2vertex_id)
+    elif MODE == 4:
+        best_cost = 10 ** 10
+        for i in tqdm_friendly(range(100)):
+            graph.vs['p'] = np.random.choice([i for i in range(THREAD_COUNT)], nc, p=[1. / THREAD_COUNT] * THREAD_COUNT)
+            cost_greedy = cut_graph(graph=graph, turn2vertex_id=turn2vertex_id)
+            best_cost = min(best_cost, np.amax(cost_greedy))
 
     print_freindly('Стоимость:', cost_greedy)
     print_freindly('Overhead:', str(sum(cost_greedy) - np.sum(graph.vs['w'])))
