@@ -11,6 +11,8 @@
 #include <fstream>
 #include <sstream>
 
+#include <experimental/filesystem>
+
 #include "timer.h"
 #include "json.h"
 #include "argparse.h"
@@ -240,26 +242,26 @@ int main(int argc, char *argv[]) {
     if (verbose) {
         cout << "Copying files from " << simfiles_path << " to " << output_path << endl;
     }
-    std::filesystem::create_directories(output_path);
+    std::experimental::filesystem::create_directories(output_path);
     // clear the directory
     bool clean_all = args["rebuild"].as<bool>();
-    for (const auto &entry : std::filesystem::directory_iterator(output_path)) {
+    for (const auto &entry : std::experimental::filesystem::directory_iterator(output_path)) {
         // remove files starting with "gen_"
         if (entry.path().filename().string().substr(0, 4) == "gen_" || clean_all)
-            std::filesystem::remove_all(entry.path());
+            std::experimental::filesystem::remove_all(entry.path());
     }
 
-    for (const auto &entry : std::filesystem::directory_iterator(simfiles_path)) {
+    for (const auto &entry : std::experimental::filesystem::directory_iterator(simfiles_path)) {
         string filename = entry.path().filename();
         if (verbose) {
             cout << "Copying " << filename << endl;
         }
-        std::filesystem::copy(entry.path(), output_path + filename, std::filesystem::copy_options::overwrite_existing);
+        std::experimental::filesystem::copy(entry.path(), output_path + filename, std::experimental::filesystem::copy_options::overwrite_existing);
     }
     if (verbose) {
         cout << "Copying files from " << utils_path << " to " << output_path << endl;
     }
-    for (const auto &entry : std::filesystem::directory_iterator(utils_path)) {
+    for (const auto &entry : std::experimental::filesystem::directory_iterator(utils_path)) {
         // copy only the .h files
         string filename = entry.path().filename();
         if (filename.size() <= 2 || filename.substr(filename.size()-2) != ".h") {
@@ -268,7 +270,7 @@ int main(int argc, char *argv[]) {
         if (verbose) {
             cout << "Copying " << filename << endl;
         }
-        std::filesystem::copy(entry.path(), output_path + filename, std::filesystem::copy_options::overwrite_existing);
+        std::experimental::filesystem::copy(entry.path(), output_path + filename, std::experimental::filesystem::copy_options::overwrite_existing);
     }
     // generate the code
     timer.reset();
@@ -282,7 +284,7 @@ int main(int argc, char *argv[]) {
     }
     // compile the code using cmake in output_path/build
     string build_path = output_path + "build";
-    std::filesystem::create_directories(build_path);
+    std::experimental::filesystem::create_directories(build_path);
     string cmake_cmd = "cmake -S \"" + output_path + "\" -B \"" + build_path + "\"";
     int jthreads = 0;
     // if Ninja is available, use it
