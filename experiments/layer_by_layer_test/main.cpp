@@ -330,6 +330,7 @@ int main(int argc, char *argv[]) {
     cout << "Graph initialization time: " << timer.getTime() << " s" << endl;
 
     cout << "Number of nodes: " << graph.num_nodes << endl;
+    cout << "Number of regs: " << graph.reg_edges.size() << endl;
     cout << "Number of layers: " << graph.layers.size() << endl;
     //graph.print_layers();
 
@@ -341,9 +342,9 @@ int main(int argc, char *argv[]) {
         count++;
     } while (timer.getTime() < timeout);
     double time_per_cycle = timer.getTime() / count;
-    cout << "Average time per cycle: " << time_per_cycle << " s" << endl;
+    cout << "Average time per cycle (single thread mode): " << time_per_cycle*1000 << " ms" << endl;
 
-    for (int num_threads = 1; num_threads <= 16; num_threads++) {
+    for (int num_threads = 2; num_threads <= 16; num_threads++) {
         graph.split_for_threads(num_threads);
         timer.reset();
         count = 0;
@@ -352,8 +353,8 @@ int main(int argc, char *argv[]) {
             graph.compute_parallel(100);
         } while (timer.getTime() < timeout);
         double time_per_cycle_par = timer.getTime() / count;
-        cout << "Average time per cycle with " << num_threads << ": ";
-        cout << time_per_cycle_par << " s (" << time_per_cycle / time_per_cycle_par << "x speedup)" << endl;
+        cout << "Average time per cycle with " << num_threads << " workers: ";
+        cout << time_per_cycle_par*1000 << " ms (" << time_per_cycle / time_per_cycle_par << "x speedup)" << endl;
         graph.stop_threads();
     }
 

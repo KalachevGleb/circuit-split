@@ -285,6 +285,12 @@ int main(int argc, char *argv[]) {
     string build_path = output_path + "build";
     std::filesystem::create_directories(build_path);
     string cmake_cmd = "cmake -S \"" + output_path + "\" -B \"" + build_path + "\"";
+    if (args["debug"].as<bool>()) {
+        cmake_cmd += " -DCMAKE_BUILD_TYPE=Debug";
+    } else {
+        cmake_cmd += " -DCMAKE_BUILD_TYPE=Release";
+    }
+
     int jthreads = 0;
     // if Ninja is available, use it
     if (system("ninja --version 2> nul") == 0) {
