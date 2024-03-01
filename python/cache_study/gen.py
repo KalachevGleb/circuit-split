@@ -80,6 +80,7 @@ def main():
 
     fd = open(FILENAME_IN, 'r')
     graph_raw = json.load(fd)
+    graph_raw_copy = graph_raw.copy()
     fd.close()
 
     nc = len(graph_raw['node_weights'])
@@ -145,7 +146,7 @@ def main():
 
     fd = open('blob/out.json', 'w')
     json.dump({
-        'graph' : graph_raw,
+        'graph' : graph_raw_copy,
         'memory_order' : memory_order,
         'schedule' : [[[0, vertex_id] for vertex_id in schedule]],
         'sync_points' : []

@@ -67,6 +67,187 @@ struct CircuitGraph {
         nthreads = int(schedule.size());
     }
 
+    bool checkCorrectness() {
+        int nerr = 0;
+        // 1. Check that all non-input nodes are present in the schedule
+        vector<int> not_present_mo, not_present_sch, duplicated_mo, duplicated_sch, invalid_mo, invalid_sch, duplicated_syncp;
+        vector<int> count_mo(num_nodes, 0), count_sch(num_nodes, 0);
+        // 1a. Check memory order
+        for (int i : mem_order) {
+            if(i >= num_nodes || i < 0) {
+                invalid_mo.push_back(i);
+            } else {
+                count_mo[i]++;
+            }
+        }
+        for (size_t i = 0; i < count_mo.size(); i++) {
+            if (count_mo[i] > 1) {
+                duplicated_mo.push_back(i);
+            } else if (count_mo[i] == 0) {
+                not_present_mo.push_back(i);
+            }
+        }
+        auto report_err = [&nerr](vector<int>& v, const string& msg) {
+            if (v.empty()) return;
+            cout << "Error: " << msg << ": ";
+            int n = 0;
+            for (int i : v) {
+                cout << i << " ";
+                if (n++ > 10) {
+                    cout << "...";
+                    break;
+                }
+            }
+            cout << endl;
+            nerr++;
+        };
+        report_err(invalid_mo, "invalid nodes in memory order");
+        report_err(not_present_mo, "nodes not present in memory order");
+        report_err(duplicated_mo, "duplicated nodes in memory order");
+        // 1b. Check schedule
+        vector<int> node_thread(num_nodes, -1), num_in_thread(num_nodes, -1);
+        vector<vector<vector<int>>> syncpt(nthreads, vector<vector<int>>(nthreads, {-1})); // syncpt[i][j] is list of moments in thread i when thread j is waiting for it
+        vector<vector<int>> sync_signal_time(sync_points.size(), vector<int>(nthreads, -1)); // sync_signal_time[i][j] is the moment when thread j signals the barrier i
+        for (int i = 0; i < nthreads; i++) {
+            vector<int> count_syncp(sync_points.size(), 0);
+            int prevsync = -1, increase_err = 0;
+            int n = 0;
+            for (auto [type, j] : schedule[i]) {
+                if (type == 0) {
+                    if (j >= num_nodes || j < 0) {
+                        invalid_sch.push_back(j);
+                    } else {
+                        count_sch[j]++;
+                        node_thread[j] = i;
+                        num_in_thread[j] = n;
+                    }
+                    for (int k = 0; k < nthreads; k++) {
+                        syncpt[k][i].push_back(syncpt[k][i].back());
+                    }
+                } else if (type == 1) {
+                    if (prevsync >= j && !increase_err) {
+                        cout << "Error: synchronization points are not in increasing order in thread " << i << endl;
+                        nerr++;
+                        increase_err = 1;
+                    }
+                    if (j < 0 || j >= sync_points.size()) {
+                        invalid_sch.push_back(j);
+                    } else {
+                        count_syncp[j]++;
+                        auto& [wait, signal] = sync_points[j];
+                        if (contains(signal, i)) {
+                            sync_signal_time[j][i] = n;
+                        } else if ( !contains(wait, i)) {
+                            cout << "Error: thread " << i << " is not in the list of threads for synchronization point " << j << endl;
+                            nerr++;
+                        }
+                    }
+                } else {
+                    invalid_sch.push_back(j);
+                }
+                n++;
+            }
+            for (int j = 0; j < (int)count_syncp.size(); j++) {
+                if (count_syncp[j] > 1) {
+                    duplicated_syncp.push_back(j);
+                }
+            }
+            report_err(duplicated_syncp, "duplicated synchronization points in thread " + to_string(i));
+        }
+        for (int i = 0; i < num_nodes; i++) {
+            if (count_sch[i] > 1) {
+                duplicated_sch.push_back(i);
+            } else if (count_sch[i] == 0 && !deps[i].empty()) {
+                not_present_sch.push_back(i);
+            }
+        }
+        report_err(invalid_sch, "invalid nodes in schedule");
+        report_err(not_present_sch, "nodes not present in schedule");
+        report_err(duplicated_sch, "duplicated nodes in schedule");
+
+        // 2. Check no duplicates and only input nodes in reg_edges
+        vector<int> duplicated_re, invalid_re, noninput_re, inconsistent_re;
+        vector<int> count_re(num_nodes, 0);
+        for (auto [i, j] : reg_edges) {
+            if (i >= num_nodes || i < 0 || j >= num_nodes || j < 0) {
+                invalid_re.push_back(i);
+            } else if (deps[i].empty()) {
+                if (node_weights[i] != node_weights[j])
+                    inconsistent_re.push_back(i);
+                else
+                    count_re[i]++;
+            } else {
+                noninput_re.push_back(i);
+            }
+        }
+        for (size_t i = 0; i < count_re.size(); i++) {
+            if (count_re[i] > 1) {
+                duplicated_re.push_back(i);
+            }
+        }
+        report_err(inconsistent_re, "inconsistent weights in reg_edges");
+        report_err(invalid_re, "invalid nodes in reg_edges");
+        report_err(noninput_re, "non-input nodes in reg_edges");
+        report_err(duplicated_re, "duplicated nodes in reg_edges");
+
+        // 3. Check sync points
+        int syncperr = 0;
+        for (size_t i=0; i<sync_points.size(); i++) {
+            auto& [wait, signal] = sync_points[i];
+
+            if (any_of(wait.begin(), wait.end(), [this](int i) { return i >= nthreads || i < 0; }) ||
+                any_of(signal.begin(), signal.end(), [this](int i) { return i >= nthreads || i < 0; })) {
+                syncperr++;
+                cout << "Error: invalid thread in sync point: ["<<wait<<", "<<signal<<"]"<<endl;
+            } else if (wait.empty() || signal.empty()) {
+                syncperr++;
+                cout << "Error: empty list in sync point: ["<<wait<<", "<<signal<<"]"<<endl;
+            } else if (any_of(signal.begin(), signal.end(), [this, i, &sync_signal_time](int t) { return sync_signal_time[i][t] == -1; })) {
+                syncperr++;
+                cout << "Error: thread not signaling in sync point: ["<<wait<<", "<<signal<<"]"<<endl;
+            }
+            if (syncperr > 10) {
+                cout << "Error: too many sync point errors; skip further checks" << endl;
+                break;
+            }
+        }
+        nerr += syncperr;
+
+        if (nerr) {
+            return false;
+        }
+
+        // 4. check synchronization correctness (only if no previous errors)
+        int nsync_err = 0;
+        for (int i = 0; i < nthreads && nsync_err < 10; i++) {
+            vector<int> synced(nthreads, -1);
+            for (int j = 0; j < (int)schedule[i].size(); j++) {
+                auto [type, k] = schedule[i][j];
+                if (type == 1) {
+                    for (int t : sync_points[k].second) {
+                        synced[t] = sync_signal_time[k][t];
+                    }
+                } else { // type == 0, calculation
+                    for (int m : deps[k]) {
+                        if (node_thread[m] == i || node_thread[m] == -1) continue; // no need to sync
+                        int pos = num_in_thread[m];
+                        if (synced[node_thread[m]] < pos) {
+                            cout << "Error: in thread " << i << " node "<<k << " using node " << m << " before it is synchronized with thread " << node_thread[m] << endl;
+                            nsync_err++;
+                        }
+                    }
+                }
+                if (nsync_err >= 10) {
+                    cout << "Error: too many sync errors; skip further checks" << endl;
+                    break;
+                }
+            }
+        }
+        nerr += nsync_err;
+
+        return !nerr;
+    }
+
     void gen_eval_thread(const string& fn, const string& func_name, int thread_id, int start, int end,
                          int& wait_point_i, bool append, /*bool use_templates,*/ const vector<int>& data_start) {
         ofstream file(fn, append ? ios::app : ios::trunc);
@@ -80,19 +261,7 @@ struct CircuitGraph {
         for (int i = start; i < end; i++) {
             auto [type, j] = schedule[thread_id][i];
             if (type == 0) {
-                //if(use_templates) {
-                    // file << "    state.node_" << j << ".calc_P<" << j << ">(";
-                    /*file << "calc_P<"<< j << "," << node_weights[j]<< << ">(state.data+"<<data_start[j]<<", ";
-                    >(state.data";
-                    for (size_t dep_i = 0; dep_i < deps[j].size(); dep_i++) {
-                        if (dep_i > 0) file << ", ";
-                        file << "state.node_" << deps[j][dep_i];
-                    }
-                    file << ");\n";
-                } else {*/
-                    //file << "    state.node_" << j << ".calc_P_nt(" << j << ", ";
-                    write_expanded_calcP_template(file, j, j, deps[j], data_start);
-                //}
+                write_expanded_calcP_template(file, j, j, deps[j], data_start);
             } else {
                 if (type != 1) throw runtime_error("invalid type "+to_string(type)+" in schedule (expected 0 or 1)");
                 if (j < 0 || j >= sync_points.size()) throw runtime_error("invalid sync point "+to_string(j));
@@ -147,7 +316,6 @@ struct CircuitGraph {
         file << "struct CircuitImpl : public Circuit {\n";
         file << "    SpinLockWait barriers["<<sync_points.size()<<"];\n";
         file << "    vector<int> wait_points["<<nthreads<<"];\n";
-        //map<int, int> wt_count;
         vector<int> data_start(num_nodes,0);
         int total_weight = 0;
         for (int i = 0; i < num_nodes; i++) {
@@ -158,16 +326,7 @@ struct CircuitGraph {
         file << "    struct State {\n";
         file << "        uint32_t data["<<total_weight<<"];\n";
         file << "    } state;\n";
-        //for (int i = 0; i < num_nodes; i++) {
-        //    auto &num = wt_count[node_weights[i]];
-        //    node_names[i] = "nodes_"+to_string(node_weights[i])+"["+to_string(num)+"]";
-        //    num++;
-            //int node_id = mem_order[i];
-        //}
-        //for (auto [w, count] : wt_count) {
-        //    file << "        Node<" << w << "> nodes_" << w << "[" << count << "];\n";
-        //}
-        //file << "    } state;\n";
+
         int maxFiles = max<int>(1, std::thread::hardware_concurrency()*2);
         vector<bool> used(maxFiles, false);
         int curr_file = 0;
@@ -225,7 +384,7 @@ struct CircuitGraph {
 };
 
 
-int main(int argc, char *argv[]) {
+int run(int argc, char *argv[]) {
     // argv[1] is the input JSON file
     // argv[2] is the temporary directory to write the generated code
     // options:
@@ -237,7 +396,6 @@ int main(int argc, char *argv[]) {
         {"debug", "d", JSON::Boolean, "Compile generated code with debug flags", false},
         {"rebuild", "B", JSON::Boolean, "Clean the build directory before generating code", false},
         {"compiler", "c", JSON::String, "C++ compiler to use", ""},
-        //{"no-templates", "", JSON::Boolean, "Do not use C++ templates for node weights", false},
         //{"profile", "p", JSON::Boolean, "Compile generated code with profiling flags (e.g. -pg)", false},
         {"time", "t", JSON::Double, "Test running time (in seconds)", 1.0},
         {"help", "h", JSON::Boolean, "Print this help message", false},
@@ -246,6 +404,7 @@ int main(int argc, char *argv[]) {
         {"input", "", JSON::String, "Input JSON file"},
         {"output_path", "", JSON::String, "Path to output directory"},
     };
+    JSON time_results(JSON::Object);
     JSON args;
     try {
         args = parseCmd(argc, argv, positionalArgs, options);
@@ -269,6 +428,7 @@ int main(int argc, char *argv[]) {
     auto input = JSON::load(input_file);
     if (verbose)
         cout << "Load time: " << timer.getTime() << " s" << endl;
+    time_results["load_time"] = timer.getTime();
     timer.reset();
     CircuitGraph graph(input);
     if (verbose) {
@@ -276,6 +436,18 @@ int main(int argc, char *argv[]) {
 
         cout << "Number of nodes: " << graph.num_nodes << endl;
         cout << "Number of regs: " << graph.reg_edges.size() << endl;
+    }
+    time_results["graph_init_time"] = timer.getTime();
+    timer.reset();
+    bool correct = graph.checkCorrectness();
+    if (verbose) {
+        cout << "Correctness check time: " << timer.getTime() << " s" << endl;
+        cout << "Correctness: " << correct << endl;
+    }
+    time_results["correctness_check_time"] = timer.getTime();
+    if (!correct) {
+        cout << "Graph is not correct" << endl;
+        return 1;
     }
 
     auto work_path = args["output_path"].str();
@@ -331,10 +503,12 @@ int main(int argc, char *argv[]) {
     if (verbose) {
         cout << "Code generation time: " << timer.getTime() << " s" << endl;
     }
+    time_results["gen_code_time"] = timer.getTime();
 
     if(!args["run"].as<bool>()) {
         return 0;
     }
+    timer.reset();
     // compile the code using cmake in output_path/build
     string build_path = output_path + "build";
     std::filesystem::create_directories(build_path);
@@ -367,6 +541,7 @@ int main(int argc, char *argv[]) {
         cerr << "Error: cmake failed with return code " << ret << endl;
         return ret;
     }
+    time_results["cmake_time"] = timer.getTime();
 
     string make_cmd = "cmake --build \"" + build_path + "\"";
     if (args["debug"].as<bool>()) {
@@ -382,6 +557,7 @@ int main(int argc, char *argv[]) {
     } else {
         make_cmd += " 2> nul > nul";
     }
+
     timer.reset();
     ret = system(make_cmd.c_str());
     if (ret != 0) {
@@ -391,6 +567,7 @@ int main(int argc, char *argv[]) {
     if (verbose) {
         cout << "Compilation time: " << timer.getTime() << " s" << endl;
     }
+    time_results["compilation_time"] = timer.getTime();
     // run the code
     string executable = output_path + "/bin/simulator";
     auto timeout = args["time"].as<double>();
@@ -422,8 +599,21 @@ int main(int argc, char *argv[]) {
         if (verbose) {
             cout << "Output written to " << output_json << ": " << endl;
         }
+        cout<<"{"<<endl;
+        cout << "stages_time: " << time_results.toString(true) << "," << endl;
         ifstream file(output_json);
-        cout << file.rdbuf();
+
+        cout << "run_results: " << file.rdbuf();
+        cout<<"}"<<endl;
     }
     return 0;
+}
+
+int main(int argc, char *argv[]) {
+    try {
+        return run(argc, argv);
+    } catch (const std::exception &e) {
+        cerr << "Exception: " << e.what() << endl;
+        return 1;
+    }
 }
