@@ -19,8 +19,15 @@ JSON parseCmd(int& argc, char **argv, const vector<Option>& positional, const ve
     }
 
     int remaining = 1;
-    auto get_option = [argc, argv, optionMap, &res](int& pos, const string& key0, bool no, const Option *posopt) {
-        if (!posopt && optionMap.count(key0) == 0) throw OptionError("Unknown option: " + key0);
+    auto get_option = [argc, argv, optionMap, &res](int& pos, string key0, bool no, const Option *posopt) {
+        if (!posopt && optionMap.count(key0) == 0) {
+            if (no && optionMap.count("no-" + key0)) {
+                key0 = "no-" + key0;
+                no = false;
+            } else {
+                throw OptionError("Unknown option: " + key0);
+            }
+        }
         auto *opt = posopt ? posopt : optionMap.at(key0);
         auto type = opt->type;
         auto &key = opt->name;

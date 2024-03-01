@@ -67,7 +67,8 @@ struct CircuitGraph {
         nthreads = int(schedule.size());
     }
 
-    void gen_eval_thread(const string& fn, const string& func_name, int thread_id, int start, int end, int& wait_point_i, bool append) {
+    void gen_eval_thread(const string& fn, const string& func_name, int thread_id, int start, int end,
+                         int& wait_point_i, bool append, /*bool use_templates,*/ const vector<int>& data_start) {
         ofstream file(fn, append ? ios::app : ios::trunc);
         if (!append) {
             file << "#include \"gen_circuit_impl.h\"\n\n";
@@ -79,12 +80,19 @@ struct CircuitGraph {
         for (int i = start; i < end; i++) {
             auto [type, j] = schedule[thread_id][i];
             if (type == 0) {
-                file << "    state.node_" << j << ".calc_P<" << j << ">(";
-                for (size_t dep_i = 0; dep_i < deps[j].size(); dep_i++) {
-                    if (dep_i > 0) file << ", ";
-                    file << "state.node_" << deps[j][dep_i];
-                }
-                file << ");\n";
+                //if(use_templates) {
+                    // file << "    state.node_" << j << ".calc_P<" << j << ">(";
+                    /*file << "calc_P<"<< j << "," << node_weights[j]<< << ">(state.data+"<<data_start[j]<<", ";
+                    >(state.data";
+                    for (size_t dep_i = 0; dep_i < deps[j].size(); dep_i++) {
+                        if (dep_i > 0) file << ", ";
+                        file << "state.node_" << deps[j][dep_i];
+                    }
+                    file << ");\n";
+                } else {*/
+                    //file << "    state.node_" << j << ".calc_P_nt(" << j << ", ";
+                    write_expanded_calcP_template(file, j, j, deps[j], data_start);
+                //}
             } else {
                 if (type != 1) throw runtime_error("invalid type "+to_string(type)+" in schedule (expected 0 or 1)");
                 if (j < 0 || j >= sync_points.size()) throw runtime_error("invalid sync point "+to_string(j));
@@ -101,8 +109,37 @@ struct CircuitGraph {
         }
         file << "}\n";
     }
-
-    void gen_code(const string &fn, int maxChunkSize) {
+    void write_expanded_calcP_template(ostream& file, int node, int S, const vector<int>& args, const vector<int>& data_start) {
+        /* Inline the calc_P function call:
+         * template<int W> class Node {
+            ...
+            template<int S, int start>
+            void _calc_P() {}
+            template<int S, int start, int W1, int ... Ws>
+            void _calc_P(const Node<W1>& n1, const Node<Ws>& ... args) {
+                for (int i = 0; i < W1; i++) {
+                    data[(i+start)%W] += n1.data[i]*S;
+                }
+                _calc_P<(S>>2)*7 | 1, (start+W1)%W>(args...);
+            }
+            template<int S, int ... Ws>
+            void calc_P(const Node<Ws>& ... args) {
+                _calc_P<S*2 + 1, 0>(args...);
+            }
+            };*/
+        int start = 0, W = node_weights[node];
+        S = S*2 + 1;
+        for (int arg : args) {
+            int W1 = node_weights[arg];
+            for (int j = 0; j < W1; j++) {
+                file << "    state.data["<<data_start[node] + (j+start)%W<<"] += state.data["<<(data_start[arg]+j)<<"]*" << S << ";\n";
+            }
+            S = (S>>2)*7 | 1;
+            start = (start+W1)%W;
+        }
+    }
+    void gen_code(const string &fn, int maxChunkSize/*, bool use_templates*/) {
+        vector<string> node_names(num_nodes);
         ofstream file(fn+"_impl.h"), cppfile(fn+".cpp");
         file << "#include \"circuit.h\"\n";
         file << "#include <thread>\n";
@@ -110,12 +147,27 @@ struct CircuitGraph {
         file << "struct CircuitImpl : public Circuit {\n";
         file << "    SpinLockWait barriers["<<sync_points.size()<<"];\n";
         file << "    vector<int> wait_points["<<nthreads<<"];\n";
-        file << "    struct State {\n";
+        //map<int, int> wt_count;
+        vector<int> data_start(num_nodes,0);
+        int total_weight = 0;
         for (int i = 0; i < num_nodes; i++) {
             int node_id = mem_order[i];
-            file << "        Node<"<<node_weights[node_id]<<"> node_" << node_id << ";\n";
+            data_start[node_id] = total_weight;
+            total_weight += node_weights[node_id];
         }
+        file << "    struct State {\n";
+        file << "        uint32_t data["<<total_weight<<"];\n";
         file << "    } state;\n";
+        //for (int i = 0; i < num_nodes; i++) {
+        //    auto &num = wt_count[node_weights[i]];
+        //    node_names[i] = "nodes_"+to_string(node_weights[i])+"["+to_string(num)+"]";
+        //    num++;
+            //int node_id = mem_order[i];
+        //}
+        //for (auto [w, count] : wt_count) {
+        //    file << "        Node<" << w << "> nodes_" << w << "[" << count << "];\n";
+        //}
+        //file << "    } state;\n";
         int maxFiles = max<int>(1, std::thread::hardware_concurrency()*2);
         vector<bool> used(maxFiles, false);
         int curr_file = 0;
@@ -130,7 +182,7 @@ struct CircuitGraph {
                     string funcname = "eval_" + to_string(i) + "_chunk_" + to_string(j);
                     file << "    void " << funcname << "();\n";
                     evalfunc << "        " << funcname << "();\n";
-                    gen_eval_thread(fn+"_eval_part"+to_string(curr_file)+".cpp", funcname, i, start, end, wait_point, used[curr_file]);
+                    gen_eval_thread(fn+"_eval_part"+to_string(curr_file)+".cpp", funcname, i, start, end, wait_point, used[curr_file], data_start);//, use_templates);
                     used[curr_file] = true;
                     curr_file = (curr_file + 1) % maxFiles;
                 }
@@ -138,7 +190,7 @@ struct CircuitGraph {
                 file << evalfunc.str();
             } else {
                 file << "    void eval_"<<i<<"();\n";
-                gen_eval_thread(fn+"_eval"+ to_string(i)+".cpp", "eval_"+to_string(i), i, 0, size, wait_point, false);
+                gen_eval_thread(fn+"_eval"+ to_string(i)+".cpp", "eval_"+to_string(i), i, 0, size, wait_point, false, data_start);//, use_templates);
             }
         }
         file << "    CircuitImpl() {\n";
@@ -184,6 +236,8 @@ int main(int argc, char *argv[]) {
         {"chunk-size", "", JSON::Integer, "Maximum number of rows in one evaluation function chunk", 1000},
         {"debug", "d", JSON::Boolean, "Compile generated code with debug flags", false},
         {"rebuild", "B", JSON::Boolean, "Clean the build directory before generating code", false},
+        {"compiler", "c", JSON::String, "C++ compiler to use", ""},
+        //{"no-templates", "", JSON::Boolean, "Do not use C++ templates for node weights", false},
         //{"profile", "p", JSON::Boolean, "Compile generated code with profiling flags (e.g. -pg)", false},
         {"time", "t", JSON::Double, "Test running time (in seconds)", 1.0},
         {"help", "h", JSON::Boolean, "Print this help message", false},
@@ -273,7 +327,7 @@ int main(int argc, char *argv[]) {
     }
     // generate the code
     timer.reset();
-    graph.gen_code(output_path+"gen_circuit", maxChunkSize);
+    graph.gen_code(output_path+"gen_circuit", maxChunkSize);//, !args["no-templates"].as<bool>());
     if (verbose) {
         cout << "Code generation time: " << timer.getTime() << " s" << endl;
     }
@@ -289,6 +343,9 @@ int main(int argc, char *argv[]) {
         cmake_cmd += " -DCMAKE_BUILD_TYPE=Debug";
     } else {
         cmake_cmd += " -DCMAKE_BUILD_TYPE=Release";
+    }
+    if (!args["compiler"].str().empty()) {
+        cmake_cmd += " -DCMAKE_CXX_COMPILER=" + args["compiler"].str();
     }
 
     int jthreads = 0;
