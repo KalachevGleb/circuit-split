@@ -14,7 +14,7 @@ def main():
     data = np.array([entry['nsteps'] for entry in data])
 
     plt.plot(data)
-    plt.savefig('blob/plot.png')
+    plt.savefig('plot.png')
 
 if __name__ == '__main__':
     main()

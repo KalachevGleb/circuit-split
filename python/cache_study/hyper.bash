@@ -7,6 +7,6 @@ for thread in ${memSizes[@]}; do
     echo "$thread KB"
     python gen.py 1 "$thread"
     simulation --compiler clang++ blob/out.json blob/work -r -t 10 >> blob/log.txt
-    echo "," >> log.txt
+    echo "," >> blob/log.txt
 done
-echo "]" >> log.txt
+echo "]" >> blob/log.txt
