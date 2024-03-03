@@ -11,10 +11,10 @@ import matplotlib.pyplot as plt
 # TODO
 #
 
-FILENAME_IN = '../gen_graphs/output/bitonic_sort_10.json'
+FILENAME_IN = '../gen_graphs/output/bitonic_sort_11.json'
 FRIENDLY = True
 MODE = int(sys.argv[1])
-MAX_SAMPLE_SIZE = 20
+MAX_SAMPLE_SIZE = 10
 MEM_SIZE = int(sys.argv[2]) * 1024
 
 class Cache:
@@ -113,7 +113,7 @@ def main():
         for _ in range(len(graph.vs)):
             
             scores = []
-            for vertex in curr_vertices:#random.sample(curr_vertices, k=min(MAX_SAMPLE_SIZE, len(curr_vertices))):
+            for vertex in random.sample(curr_vertices, k=min(MAX_SAMPLE_SIZE, len(curr_vertices))):
                 ids = [parent.index for parent in vertex.neighbors(mode='in')]
                 scores.append(cache.score(ids))
 
@@ -135,8 +135,9 @@ def main():
 
                 if good:
                     curr_vertices.append(child)
+        print_freindly('Укладка в памяти стандартная')
 
-        memory_order = schedule #list(range(nc))
+        memory_order = list(range(nc))
                 
     else:
         raise ValueError('Плохой MODE')
