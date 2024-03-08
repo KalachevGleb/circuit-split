@@ -1,19 +1,38 @@
 #!/bin/bash
 
-mkdir -p blob
+tempDir="blob/temp2" #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+randomness="$1"
 
-memSizes=(1 2 4 8 16 32 64 128 256 512 1024 2048 4096)
+mkdir -p "$tempDir"
 
-echo "[" > blob/log.json
+memSizes=(4 4 4 4 4 4 4 4)
+
+echo "[" > "$tempDir/log.json"
 
 for memSize in ${memSizes[@]}; do
     echo "$memSize KB"
-    python gen.py 1 "$memSize"
-    simulation --compiler clang++-17 blob/out.json blob/work -r -t 5 | tail -n +2 >> blob/log.json
-    echo "," >> blob/log.json
+
+    simulation --compiler clang++ "../gen_graphs/output/bitonic_sort_11_one_thread.json" "$tempDir/work" -r -t "20" >> "$tempDir/log.json"
+
+    echo "," >> "$tempDir/log.json"
 done
 
-python gen.py 0 "$memSize"
-simulation --compiler clang++-17 blob/out.json blob/work -r -t 5 | tail -n +2 >> blob/log.json
+for memSize in ${memSizes[@]}; do
+    echo "$memSize KB"
 
-echo "]" >> blob/log.json
+    python gen.py 1 "$memSize" "$randomness" > "$tempDir/out.json"
+    simulation --compiler g++ "$tempDir/out.json" "$tempDir/work" -r -t "20" >> "$tempDir/log.json"
+
+    echo "," >> "$tempDir/log.json"
+done
+
+for memSize in ${memSizes[@]}; do
+    echo "$memSize KB"
+
+    python gen.py 0 "$memSize" "$1" > "$tempDir/out.json"
+    simulation --compiler clang++ "$tempDir/out.json" "$tempDir/work" -r -t "20" >> "$tempDir/log.json"
+
+    echo "," >> "$tempDir/log.json"
+done
+
+echo "]" >> "$tempDir/log.json"

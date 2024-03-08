@@ -12,10 +12,10 @@ import matplotlib.pyplot as plt
 #
 
 FILENAME_IN = '../gen_graphs/output/bitonic_sort_11.json'
-FRIENDLY = True
+FRIENDLY = False
 MODE = int(sys.argv[1])
-MAX_SAMPLE_SIZE = 10
 MEM_SIZE = int(sys.argv[2]) * 1024
+MAX_SAMPLE_SIZE = int(sys.argv[3])
 
 class Cache:
     def __init__(self, max_size):
@@ -78,7 +78,6 @@ def print_freindly(*msg):
         print(*msg)
 
 def main():
-
     fd = open(FILENAME_IN, 'r')
     graph_raw = json.load(fd)
     graph_raw_copy = graph_raw.copy()
@@ -121,7 +120,7 @@ def main():
 
             schedule.append(vertex.index)
             cache.push(vertex.index, vertex['w'] * 4) #4 == sizeof(int)
-            del curr_vertices[curr_vertices.index(vertex)]
+            del curr_vertices[np.argmax(scores)]
 
             for child in vertex.neighbors(mode='out'):
                 if child in curr_vertices:
@@ -135,6 +134,7 @@ def main():
 
                 if good:
                     curr_vertices.append(child)
+                    
         print_freindly('Укладка в памяти стандартная')
 
         memory_order = list(range(nc))
@@ -144,14 +144,12 @@ def main():
 
     print_freindly('Дамп')
 
-    fd = open('blob/out.json', 'w')
-    json.dump({
+    print(json.dumps({
         'graph' : graph_raw_copy,
         'memory_order' : memory_order,
         'schedule' : [[[0, vertex_id] for vertex_id in schedule]],
         'sync_points' : []
-    }, fd)
-    fd.close()
+    }))
 
     print_freindly('Готово! Have a nice day :)')
 
