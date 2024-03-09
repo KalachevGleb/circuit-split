@@ -67,7 +67,7 @@ class Cache:
 
         return ret
 
-def build_schedule_recursive(graph):
+def build_schedule_recursive(graph): #Потом
     if len(graph) <= 3:
         pass
 
@@ -76,6 +76,12 @@ def build_schedule_recursive(graph):
 def print_freindly(*msg):
     if FRIENDLY:
         print(*msg)
+
+def progressbar_friendly(arg):
+    if FRIENDLY:
+        return tqdm(arg)
+    else:
+        return arg
 
 def main():
     fd = open(FILENAME_IN, 'r')
@@ -138,18 +144,91 @@ def main():
         print_freindly('Укладка в памяти стандартная')
 
         memory_order = list(range(nc))
+    elif MODE == 2:
+        print_freindly('Пользуюсь второй версией жадного алгоритма')
+
+        schedule = []
+        cache = Cache(max_size=MEM_SIZE)
+
+        graph.vs['codegree'] = [vertex.degree(mode='in') for vertex in graph.vs]
+
+        curr_vertices = [vertex for vertex in graph.vs if vertex.degree(mode='in') == 0]
+        for _ in progressbar_friendly(range(len(graph.vs))):
+            
+            scores = []
+            for vertex in random.sample(curr_vertices, k=min(MAX_SAMPLE_SIZE, len(curr_vertices))):
+                ids = [parent.index for parent in vertex.neighbors(mode='in')]
+                scores.append(cache.score(ids))
+
+            vertex = curr_vertices[np.argmax(scores)]
+
+            schedule.append(vertex.index)
+            cache.push(vertex.index, vertex['w'] * 4) #4 == sizeof(int)
+            curr_vertices.remove(vertex)
+
+            for child in vertex.neighbors(mode='out'):
+                if child['codegree'] == 1:
+                    curr_vertices.append(child)
                 
+                child['codegree'] -= 1
+                    
+        print_freindly('Укладка в памяти стандартная')
+
+        memory_order = list(range(nc))
+    elif MODE == 3:
+        print_freindly('Пользуюсь третьей версией жадного алгоритма')
+
+        schedule = []
+        cache = Cache(max_size=MEM_SIZE)
+
+        graph.vs['codegree'] = [vertex.degree(mode='in') for vertex in graph.vs]
+
+        curr_vertices = set([vertex for vertex in graph.vs if vertex.degree(mode='in') == 0])
+        for _ in progressbar_friendly(range(len(graph.vs))):
+            
+            last_score = -1
+            for vertex_ in random.sample(curr_vertices, min(MAX_SAMPLE_SIZE, len(curr_vertices))):
+                ids = [parent.index for parent in vertex_.neighbors(mode='in')]
+                score = cache.score(ids)
+
+                if score > last_score:
+                    vertex = vertex_
+                    last_score = score
+
+            schedule.append(vertex.index)
+            cache.push(vertex.index, vertex['w'] * 4) #4 == sizeof(int)
+            curr_vertices.remove(vertex)
+
+            for child in vertex.neighbors(mode='out'):
+                if child['codegree'] == 1:
+                    curr_vertices.add(child)
+                
+                child['codegree'] -= 1
+                    
+        print_freindly('Укладка в памяти стандартная')
+
+        memory_order = list(range(nc))
     else:
         raise ValueError('Плохой MODE')
 
     print_freindly('Дамп')
 
-    print(json.dumps({
-        'graph' : graph_raw_copy,
-        'memory_order' : memory_order,
-        'schedule' : [[[0, vertex_id] for vertex_id in schedule]],
-        'sync_points' : []
-    }))
+    if not FRIENDLY:
+        print(json.dumps({
+            'graph' : graph_raw_copy,
+            'memory_order' : memory_order,
+            'schedule' : [[[0, vertex_id] for vertex_id in schedule]],
+            'sync_points' : []
+        }))
+    else:
+        fd = open('blob/out.json', 'w')
+        fd.write(json.dumps({
+            'graph' : graph_raw_copy,
+            'memory_order' : memory_order,
+            'schedule' : [[[0, vertex_id] for vertex_id in schedule]],
+            'sync_points' : []
+        }))
+        fd.close()
 
     print_freindly('Готово! Have a nice day :)')
 
