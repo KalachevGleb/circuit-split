@@ -1,5 +1,6 @@
 import json
 import sys
+import os
 import random
 
 import igraph as ig
@@ -8,64 +9,67 @@ from tqdm import tqdm
 
 import matplotlib.pyplot as plt
 
+import cache
+Cache = cache.Cache
+
 # TODO
-#
+# Добавитьразличные веса вершин
 
-FILENAME_IN = '../gen_graphs/output/bitonic_sort_11.json'
-FRIENDLY = False
-MODE = int(sys.argv[1])
-MEM_SIZE = int(sys.argv[2]) * 1024
-MAX_SAMPLE_SIZE = int(sys.argv[3])
+FILENAME_IN = '/home/shkiper/circuit-split/python/gen_graphs/output/bitonic_sort_5.json'
+FRIENDLY = True #False
+MODE = 3 #int(sys.argv[1])
+MEM_SIZE = 8192 #int(sys.argv[2]) * 1024
+MAX_SAMPLE_SIZE = 5 #int(sys.argv[3])
 
-class Cache:
-    def __init__(self, max_size):
-        self.max_size = max_size
-        self.ids = []
-        self.sizes = []
+# class Cache:
+#     def __init__(self, max_size):
+#         self.max_size = max_size
+#         self.ids = []
+#         self.sizes = []
 
-    def push(self, id, size):
-        if size > self.max_size:
-            self.ids = []
-            self.sizes = []
+#     def push(self, id, size):
+#         if size > self.max_size:
+#             self.ids = []
+#             self.sizes = []
 
-            return
-        elif id in self.ids:
-            if self.ids[-1] == id:
-                return
-            else:
-                pos = self.ids.index(id)
+#             return
+#         elif id in self.ids:
+#             if self.ids[-1] == id:
+#                 return
+#             else:
+#                 pos = self.ids.index(id)
 
-                self.ids[pos], self.ids[-1] = self.ids[-1], self.ids[pos]
-                self.sizes[pos], self.sizes[-1] = self.sizes[-1], self.sizes[pos]
+#                 self.ids[pos], self.ids[-1] = self.ids[-1], self.ids[pos]
+#                 self.sizes[pos], self.sizes[-1] = self.sizes[-1], self.sizes[pos]
 
-                return
-        else:
-            while self.max_size - sum(self.sizes) < size:
-                del self.ids[0]
-                del self.sizes[0]
+#                 return
+#         else:
+#             while self.max_size - sum(self.sizes) < size:
+#                 del self.ids[0]
+#                 del self.sizes[0]
 
-            self.ids.append(id)
-            self.sizes.append(size)
+#             self.ids.append(id)
+#             self.sizes.append(size)
 
-            return
+#             return
 
-    def __contains__(self, id):
-        return id in self.ids
+#     def __contains__(self, id):
+#         return id in self.ids
     
-    def pos(self, id):
-        if id not in self.ids:
-            raise ValueError('Попытка найти в кэше переменную, которая в нем не содержится')
+#     def pos(self, id):
+#         if id not in self.ids:
+#             raise ValueError('Попытка найти в кэше переменную, которая в нем не содержится')
         
-        return self.ids.index(id)
+#         return self.ids.index(id)
     
-    def score(self, ids):
-        ret = 0
+#     def score(self, ids):
+#         ret = 0
 
-        for id in set(ids):
-            if id in self.ids:
-                ret += self.sizes[self.ids.index(id)]
+#         for id in set(ids):
+#             if id in self.ids:
+#                 ret += self.sizes[self.ids.index(id)]
 
-        return ret
+#         return ret
 
 def build_schedule_recursive(graph): #Потом
     if len(graph) <= 3:
@@ -125,7 +129,7 @@ def main():
             vertex = curr_vertices[np.argmax(scores)]
 
             schedule.append(vertex.index)
-            cache.push(vertex.index, vertex['w'] * 4) #4 == sizeof(int)
+            cache.push(vertex.index)
             del curr_vertices[np.argmax(scores)]
 
             for child in vertex.neighbors(mode='out'):
@@ -163,7 +167,7 @@ def main():
             vertex = curr_vertices[np.argmax(scores)]
 
             schedule.append(vertex.index)
-            cache.push(vertex.index, vertex['w'] * 4) #4 == sizeof(int)
+            cache.push(vertex.index)
             curr_vertices.remove(vertex)
 
             for child in vertex.neighbors(mode='out'):
@@ -179,24 +183,34 @@ def main():
         print_freindly('Пользуюсь третьей версией жадного алгоритма')
 
         schedule = []
-        cache = Cache(max_size=MEM_SIZE)
+        cache = Cache(MEM_SIZE)
 
         graph.vs['codegree'] = [vertex.degree(mode='in') for vertex in graph.vs]
 
         curr_vertices = set([vertex for vertex in graph.vs if vertex.degree(mode='in') == 0])
         for _ in progressbar_friendly(range(len(graph.vs))):
             
-            last_score = -1
-            for vertex_ in random.sample(curr_vertices, min(MAX_SAMPLE_SIZE, len(curr_vertices))):
-                ids = [parent.index for parent in vertex_.neighbors(mode='in')]
-                score = cache.score(ids)
+            min_score = 1000000000
+            min_parents = None
+            ####################################
+            for _vertex in random.sample(list(curr_vertices), min(MAX_SAMPLE_SIZE, len(curr_vertices))):##############LISTLIST LIST LIST
+            #############################################
+                ids = [parent.index for parent in _vertex.neighbors(mode='in')]
 
-                if score > last_score:
-                    vertex = vertex_
-                    last_score = score
+                score = len(ids) - cache.antiscore(ids)
+                if not cache.contains(_vertex.index):
+                    score += _vertex['w']
+
+                if score < min_score:
+                    vertex = _vertex
+                    min_score = score
+                    min_parents = ids
+                
+            for parent_id in min_parents:
+                cache.push(parent_id, vertex['w'])
+            cache.push(vertex.index, vertex['w'])
 
             schedule.append(vertex.index)
-            cache.push(vertex.index, vertex['w'] * 4) #4 == sizeof(int)
             curr_vertices.remove(vertex)
 
             for child in vertex.neighbors(mode='out'):
@@ -221,6 +235,9 @@ def main():
             'sync_points' : []
         }))
     else:
+        if not os.path.exists('blob'):
+            os.mkdir('blob')
+            
         fd = open('blob/out.json', 'w')
         fd.write(json.dumps({
             'graph' : graph_raw_copy,
