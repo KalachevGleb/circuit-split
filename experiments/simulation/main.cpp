@@ -16,6 +16,7 @@
 #include "json.h"
 #include "argparse.h"
 #include "utils.h"
+#include "checksum.h"
 
 using namespace std;
 
@@ -67,7 +68,7 @@ struct CircuitGraph {
         nthreads = int(schedule.size());
     }
 
-    bool checkCorrectness() {
+    bool checkCorrectness() const {
         int nerr = 0;
         // 1. Check that all non-input nodes are present in the schedule
         vector<int> not_present_mo, not_present_sch, duplicated_mo, duplicated_sch, invalid_mo, invalid_sch, duplicated_syncp;
@@ -249,7 +250,7 @@ struct CircuitGraph {
     }
 
     void gen_eval_thread(const string& fn, const string& func_name, int thread_id, int start, int end,
-                         int& wait_point_i, bool append, /*bool use_templates,*/ const vector<int>& data_start) {
+                         int& wait_point_i, bool append, /*bool use_templates,*/ const vector<int>& data_start) const {
         ofstream file(fn, append ? ios::app : ios::trunc);
         if (!append) {
             file << "#include \"gen_circuit_impl.h\"\n\n";
@@ -278,7 +279,7 @@ struct CircuitGraph {
         }
         file << "}\n";
     }
-    void write_expanded_calcP_template(ostream& file, int node, int S, const vector<int>& args, const vector<int>& data_start) {
+    void write_expanded_calcP_template(ostream& file, int node, int S, const vector<int>& args, const vector<int>& data_start) const {
         /* Inline the calc_P function call:
          * template<int W> class Node {
             ...
@@ -307,7 +308,7 @@ struct CircuitGraph {
             start = (start+W1)%W;
         }
     }
-    void gen_code(const string &fn, int maxChunkSize/*, bool use_templates*/) {
+    void gen_code(const string &fn, int maxChunkSize/*, bool use_templates*/) const {
         vector<string> node_names(num_nodes);
         ofstream file(fn+"_impl.h"), cppfile(fn+".cpp");
         file << "#include \"circuit.h\"\n";
