@@ -3,17 +3,50 @@
 #include <vector>
 #include <list>
 
-struct LayerVertex {
-    int id;
-    int weight;
+#include "cache.hpp"
+
+class Graph {
+public:
+    struct Vertex {
+        int id;
+        int weight;
+
+        std::vector<Vertex*> parents;
+        std::vector<Vertex*> children;
+    };
+
+    Graph(int size);
+    Graph(const Graph&);
+    Graph& operator=(const Graph&);
+    const Graph& operator=(const Graph&) const;
+    ~Graph();
+
+    void add_edge(int start, int end);
+
+private:
+    Vertex* _mem;
 };
 
 class Layer {
-    std::vector< std::list<LayerVertex> > data;
-    int curr_min;
 public:
-    Layer(int max_score);
+    struct LayerNode {
+        LayerNode* prev;
+        LayerNode* next;
+
+        Graph::Vertex* vertex;
+    };
+
+    Layer(int max_score, Cache* cache);
 
     int pop();
-    void push(int id, int score);
+    void step(int id, int score);
+
+private:
+    std::vector<LayerNode*> _mem;
+    std::vector<LayerNode*> _nodes;
+    std::map<int, LayerNode*> _id2node;
+
+    Cache* _cache;
+
+    int _curr_min;
 };
