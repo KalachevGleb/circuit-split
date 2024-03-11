@@ -20,6 +20,13 @@
 
 using namespace std;
 
+// null output name
+#ifdef _WIN32
+#define NULL_OUTPUT "NUL"
+#else
+#define NULL_OUTPUT "/dev/null"
+#endif
+
 template<class Cont, class T>
 bool contains(const Cont &c, const T &v) {
     return find(c.begin(), c.end(), v) != c.end();
@@ -525,7 +532,7 @@ int run(int argc, char *argv[]) {
 
     int jthreads = 0;
     // if Ninja is available, use it
-    if (system("ninja --version 2> nul") == 0) {
+    if (system("ninja --version 2> " NULL_OUTPUT "> " NULL_OUTPUT) == 0) {
         cmake_cmd += " -G Ninja";
     } else {
 #if defined(__linux__) || defined(__APPLE__) || defined(__gcc__)
@@ -535,7 +542,7 @@ int run(int argc, char *argv[]) {
     if (verbose) {
         cout << "Running: " << cmake_cmd << endl;
     } else {
-        cmake_cmd += " 2> nul > nul";
+        cmake_cmd += " 2> " NULL_OUTPUT " > " NULL_OUTPUT;
     }
     int ret = system(cmake_cmd.c_str());
     if (ret != 0) {
@@ -556,7 +563,7 @@ int run(int argc, char *argv[]) {
     if (verbose) {
         cout << "Running: " << make_cmd << endl;
     } else {
-        make_cmd += " 2> nul > nul";
+        make_cmd += " 2> " NULL_OUTPUT " > " NULL_OUTPUT;
     }
 
     timer.reset();
