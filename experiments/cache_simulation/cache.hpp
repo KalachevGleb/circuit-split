@@ -28,16 +28,3 @@ public:
     int antiscore(std::vector<int> ids);
     int weight(int id);
 };
-
-PYBIND11_MODULE(cache, m) {
-    py::class_<Cache>(m, "Cache")
-        .def(py::init<const int &>())
-        .def("push", &Cache::push)
-        .def("contains", &Cache::contains)
-        .def("antiscore", &Cache::antiscore)
-        .def("weight", &Cache::weight);
-
-    py::class_<CacheEntry>(m, "CacheEntry")
-        .def("id", &CacheEntry::id)
-        .def("weight", &CacheEntry::weight);
-}

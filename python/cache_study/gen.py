@@ -9,15 +9,16 @@ from tqdm import tqdm
 
 import matplotlib.pyplot as plt
 
-import cache
-Cache = cache.Cache
+import cpp
+Cache = cpp.Cache
+Layer = cpp.Layer
 
 # TODO
 # Добавитьразличные веса вершин
 
 FILENAME_IN = '/home/shkiper/circuit-split/python/gen_graphs/output/bitonic_sort_5.json'
 FRIENDLY = True #False
-MODE = 3 #int(sys.argv[1])
+MODE = 4 #int(sys.argv[1])
 MEM_SIZE = 8192 #int(sys.argv[2]) * 1024
 MAX_SAMPLE_SIZE = 5 #int(sys.argv[3])
 
@@ -103,6 +104,12 @@ def main():
     graph.add_edges(graph_raw['edges'])
 
     print_freindly('Прочитан граф на', len(graph.vs), 'вершин')
+
+    ig.plot(graph,
+            target='graph.pdf',
+            vertex_size=20,
+            bbox=(5000, 5000)
+    )
 
     if MODE == 0:
         print_freindly('Пользуюсь стандартной топологической сортировкой')
@@ -219,6 +226,33 @@ def main():
                 
                 child['codegree'] -= 1
                     
+        print_freindly('Укладка в памяти стандартная')
+
+        memory_order = list(range(nc))
+    elif MODE == 4:
+        print_freindly('Пользуюсь четвертой версией жадного алгоритма')
+
+        schedule = [vertex.index for vertex in graph.vs if vertex.degree(mode='in') == 0]
+
+        layer = Layer(1000)
+        layer.init_graph(len(graph.vs))
+        for edge in graph_raw['edges']:
+            layer.add_edge(edge[0], edge[1])
+        layer.set_weights(list(graph.vs['w']))
+        for vertex_id in schedule:
+            layer.set_score(vertex_id, graph.vs[vertex_id]['w'])
+        layer.init_cache(MEM_SIZE)
+        layer.start()
+
+        print('Главный цикл')
+
+        for i in progressbar_friendly(range(len(schedule), 512)):#len(graph.vs)):
+            print('\nИтерация:', i)
+            sys.stdout.flush()
+            schedule.append(layer.step())
+
+        print(len(schedule))
+
         print_freindly('Укладка в памяти стандартная')
 
         memory_order = list(range(nc))

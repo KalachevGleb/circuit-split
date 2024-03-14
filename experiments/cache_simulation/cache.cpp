@@ -48,6 +48,8 @@ vector<CacheEntry> Cache::push(int id, int weight) {
 
         _allocated += weight;
     }
+
+    return ret;
 }
 
 bool Cache::contains(int id) {
