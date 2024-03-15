@@ -84,11 +84,11 @@ void Layer::start() {
 
     for(auto id: ids) {
         if(_graph -> at(id).score < 0 || _graph -> at(id).weight < 0) {
-            cout << endl;
-            cout << "id: " << id << endl;
-            cout << "score: " << _graph -> at(id).score << endl;
-            cout << "weight: " << _graph -> at(id).weight << endl;
-            cout << endl;
+            //cout << endl;
+            //cout << "id: " << id << endl;
+            //cout << "score: " << _graph -> at(id).score << endl;
+            //cout << "weight: " << _graph -> at(id).weight << endl;
+            //cout << endl;
             throw Error("Скор или вес входной вершины меньше нуля в Layer::start()");
         }
     }
@@ -132,14 +132,14 @@ void Layer::start() {
 }
 
 int Layer::step() {
-    cout << endl;
+    //cout << endl;
 
     vector<int> recalculate_ids; // Номера вершин, для которых надо пересчитать скор
 
     // Пушим в кэш то, что используется и сохраняем id того, что вытолкнется
 
     int id = _lists[_curr_min] -> vertex -> id;
-    cout << "Выбрана вершина " << id << endl;
+    //cout << "Выбрана вершина " << id << endl;
     int weight = _lists[_curr_min] -> vertex -> weight;
 
     auto cache_garbage = _cache -> push(id, weight);
@@ -154,16 +154,16 @@ int Layer::step() {
         }
     }
 
-    cout << "Родители: " << (_id2node[id] -> vertex -> parents2string()) << endl;
-    cout << "Пересчитываемые вершины: " << container2string(recalculate_ids) << endl;
+    //cout << "Родители: " << (_id2node[id] -> vertex -> parents2string()) << endl;
+    //cout << "Пересчитываемые вершины: " << container2string(recalculate_ids) << endl;
 
     // Удаляем выбранную вешнину
 
-    cout << "Размер слоя: " << _mem.size() << endl;
-    cout << "Текущий минимальный скор: " << _curr_min << endl;
+    //cout << "Размер слоя: " << _mem.size() << endl;
+    //cout << "Текущий минимальный скор: " << _curr_min << endl;
 
     if(_id2node[id] -> next == nullptr) {
-        cout << "A" << endl;
+        //cout << "A" << endl;
         _lists[_curr_min] = nullptr;
 
         while(_lists[_curr_min] == nullptr) {
@@ -181,7 +181,7 @@ int Layer::step() {
         _id2node.erase(id);
     }
     else {
-        cout << "B" << endl;
+        //cout << "B" << endl;
         _id2node[id] -> next -> prev = nullptr;
         _lists[_curr_min] = _id2node[id] -> next;
 
@@ -194,13 +194,13 @@ int Layer::step() {
     // Добавляем их в слой, если нужно
 
     auto children = _graph -> at(id).children;
-    cout << "Дети: " << (_graph -> at(id)).children2string() << endl;
-    cout << "Подходят: ";
+    //cout << "Дети: " << (_graph -> at(id)).children2string() << endl;
+    //cout << "Подходят: ";
     for(Graph::Vertex* child: children) {
         child -> codegree -= 1;
 
         if(child -> codegree == 0) {
-            cout << child -> id << " ";
+            //cout << child -> id << " ";
 
             auto node = new LayerNode;
             node -> vertex = &(_graph -> at(child -> id));
@@ -241,7 +241,7 @@ int Layer::step() {
             _curr_min = min(_curr_min, score);
         }
     }
-    cout << endl;
+    //cout << endl;
 
     // Пересчитываем скоры, где это требуется
 

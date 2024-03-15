@@ -103,7 +103,7 @@ public:
     };
 
     Layer(int max_score);
-    ~Layer() {throw Error("Сделай деструктор!");}
+    ~Layer() {}//::cerr << "Сделай деструктор для Layer!" << std::endl;}
 
     void init_graph(int size) {
         if(size <= 0) {

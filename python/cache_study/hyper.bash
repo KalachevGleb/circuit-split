@@ -1,38 +1,60 @@
 #!/bin/bash
 
+memSize=32 #KB
+time=1
+experimentCount=20
+
 tempDir="blob/temp" #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-randomness="$1"
-
+greedyExec="./blob/greedy${memSize}_simulator"
+stockExec="./blob/stock_simulator"
+jsonPath="blob/dep_graph-600K-new.json"
 mkdir -p "$tempDir"
-
-memSizes=(1 2 4 8 1 2 4 8 1 2 4 8 1 2 4 8)
 
 echo "[" > "$tempDir/log.json"
 
-for memSize in ${memSizes[@]}; do
-    echo "$memSize KB"
-
-    simulation --compiler clang++ "../gen_graphs/output/bitonic_sort_11_one_thread.json" "$tempDir/work" -r -t "20" >> "$tempDir/log.json"
-
+echo "Стоковое расписание"
+echo "Сборка"
+if ! test -f "$stockExec"; then
+    python gen.py 0 "$memSize" -1
+    rm -rf "$tempDir/work"
+    simulation --compiler clang++ "blob/out.json" "$tempDir/work" >> /dev/null
+    cd blob/temp/work/generated_code/
+    mkdir -p build
+    cd build
+    cmake ..
+    cmake --build . --config Release -- -j4
+    cd ../../../../../
+    cp ./$tempDir/work/generated_code/bin/simulator "$stockExec"
+fi
+echo "Прогон"
+for i in $(seq 1 $experimentCount); do
+    echo "$i/$experimentCount"
+    # "./$tempDir/work/generated_code/bin/simulator" "$time" >> "$tempDir/log.json"
+    "./$stockExec" "$time" >> "$tempDir/log.json"
     echo "," >> "$tempDir/log.json"
 done
 
-for memSize in ${memSizes[@]}; do
-    echo "$memSize KB"
-
-    python gen.py 1 "$memSize" "$randomness" > "$tempDir/out.json"
-    simulation --compiler g++ "$tempDir/out.json" "$tempDir/work" -r -t "20" >> "$tempDir/log.json"
-
-    echo "," >> "$tempDir/log.json"
-done
-
-for memSize in ${memSizes[@]}; do
-    echo "$memSize KB"
-
-    python gen.py 0 "$memSize" "$1" > "$tempDir/out.json"
-    simulation --compiler clang++ "$tempDir/out.json" "$tempDir/work" -r -t "20" >> "$tempDir/log.json"
-
+echo "Жадное расписание"
+echo "Сборка"
+if ! test -f "$greedyExec"; then
+    python gen.py 4 "$memSize" -1
+    rm -rf "$tempDir/work"
+    simulation --compiler clang++ -B "blob/out.json" "$tempDir/work" >> /dev/null
+    cd blob/temp/work/generated_code/
+    mkdir -p build
+    cd build
+    cmake ..
+    cmake --build . --config Release -- -j4
+    cd ../../../../../
+    cp ./$tempDir/work/generated_code/bin/simulator "$greedyExec"
+fi
+echo "Прогон"
+for i in $(seq 1 $experimentCount); do
+    echo "$i/$experimentCount"
+    "./$greedyExec" "$time" >> "$tempDir/log.json"
     echo "," >> "$tempDir/log.json"
 done
 
 echo "]" >> "$tempDir/log.json"
+
+python plot.py $tempDir 

@@ -24,9 +24,7 @@ vector<CacheEntry> Cache::push(int id, int weight) {
         return ret;
     }
     else {
-        int mem_availiable = _capacity - _allocated;
-
-        while(mem_availiable < weight) {
+        while((_capacity - _allocated) < weight) {
             ret.push_back(_ordered.front());
             int excess_vertex_id = ret.back().id;
             int excess_vertex_weight = ret.back().weight;

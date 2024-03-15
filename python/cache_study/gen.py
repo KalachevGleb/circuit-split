@@ -16,11 +16,12 @@ Layer = cpp.Layer
 # TODO
 # Добавитьразличные веса вершин
 
-FILENAME_IN = '/home/shkiper/circuit-split/python/gen_graphs/output/bitonic_sort_5.json'
-FRIENDLY = True #False
-MODE = 4 #int(sys.argv[1])
-MEM_SIZE = 1024 #int(sys.argv[2]) * 1024
-MAX_SAMPLE_SIZE = 5 #int(sys.argv[3])
+FILENAME_IN = './dep_graph-600K-new.json'
+FRIENDLY = True
+MODE = int(sys.argv[1])
+MEM_SIZE = int(sys.argv[2]) * 1024
+MAX_SAMPLE_SIZE = int(sys.argv[3])
+PLOT_GRAPH = False
 
 # class Cache:
 #     def __init__(self, max_size):
@@ -81,6 +82,7 @@ def build_schedule_recursive(graph): #Потом
 def print_freindly(*msg):
     if FRIENDLY:
         print(*msg)
+        sys.stdout.flush()
 
 def progressbar_friendly(arg):
     if FRIENDLY:
@@ -105,11 +107,12 @@ def main():
 
     print_freindly('Прочитан граф на', len(graph.vs), 'вершин')
 
-    ig.plot(graph,
-            target='graph.pdf',
-            vertex_size=20,
-            bbox=(5000, 5000)
-    )
+    if PLOT_GRAPH:
+        ig.plot(graph,
+                target='graph.pdf',
+                vertex_size=20,
+                bbox=(5000, 5000)
+        )
 
     if MODE == 0:
         print_freindly('Пользуюсь стандартной топологической сортировкой')
@@ -235,7 +238,7 @@ def main():
         precomputed = [vertex.index for vertex in graph.vs if vertex.degree(mode='in') == 0]
         schedule = []
 
-        layer = Layer(1000)
+        layer = Layer(5000)
         layer.init_graph(len(graph.vs))
         for edge in graph_raw['edges']:
             layer.add_edge(edge[0], edge[1])
@@ -243,20 +246,19 @@ def main():
         for vertex_id in precomputed:
             layer.set_score(vertex_id, graph.vs[vertex_id]['w'])
         layer.init_cache(MEM_SIZE)
+        print(np.amax(graph.vs['w']), MEM_SIZE)
         layer.start()
 
-        print('Главный цикл')
+        print_freindly('Главный цикл')
 
         for i in progressbar_friendly(range(nc)):#len(graph.vs)):
-            print('\nИтерация:', i)
-            sys.stdout.flush()
             schedule.append(layer.step())
 
-        print()
-        print('Расписание:', schedule)
-        print('Дебаг:', len(schedule) - len(set(schedule)))
+        print_freindly()
+        #print_freindly('Расписание:', schedule)
+        print_freindly('Дебаг:', len(schedule) - len(set(schedule)))
 
-        print()
+        print_freindly()
         print_freindly('Укладка в памяти стандартная')
 
         memory_order = list(range(nc))
@@ -277,12 +279,12 @@ def main():
             os.mkdir('blob')
             
         fd = open('blob/out.json', 'w')
-        fd.write(json.dumps({
+        json.dump({
             'graph' : graph_raw_copy,
             'memory_order' : memory_order,
             'schedule' : [[[0, vertex_id] for vertex_id in schedule]],
             'sync_points' : []
-        }))
+        }, fd)
         fd.close()
 
     print_freindly('Готово! Have a nice day :)')
