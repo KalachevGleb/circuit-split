@@ -170,7 +170,9 @@ int Layer::step() {
             ++_curr_min;
 
             if(_curr_min > _max_score) {
-                return id;
+                _curr_min = _max_score;
+                
+                break;
             }
         }
 

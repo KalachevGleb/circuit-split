@@ -19,7 +19,7 @@ Layer = cpp.Layer
 FILENAME_IN = '/home/shkiper/circuit-split/python/gen_graphs/output/bitonic_sort_5.json'
 FRIENDLY = True #False
 MODE = 4 #int(sys.argv[1])
-MEM_SIZE = 8192 #int(sys.argv[2]) * 1024
+MEM_SIZE = 1024 #int(sys.argv[2]) * 1024
 MAX_SAMPLE_SIZE = 5 #int(sys.argv[3])
 
 # class Cache:
@@ -232,27 +232,31 @@ def main():
     elif MODE == 4:
         print_freindly('Пользуюсь четвертой версией жадного алгоритма')
 
-        schedule = [vertex.index for vertex in graph.vs if vertex.degree(mode='in') == 0]
+        precomputed = [vertex.index for vertex in graph.vs if vertex.degree(mode='in') == 0]
+        schedule = []
 
         layer = Layer(1000)
         layer.init_graph(len(graph.vs))
         for edge in graph_raw['edges']:
             layer.add_edge(edge[0], edge[1])
         layer.set_weights(list(graph.vs['w']))
-        for vertex_id in schedule:
+        for vertex_id in precomputed:
             layer.set_score(vertex_id, graph.vs[vertex_id]['w'])
         layer.init_cache(MEM_SIZE)
         layer.start()
 
         print('Главный цикл')
 
-        for i in progressbar_friendly(range(len(schedule), 512)):#len(graph.vs)):
+        for i in progressbar_friendly(range(nc)):#len(graph.vs)):
             print('\nИтерация:', i)
             sys.stdout.flush()
             schedule.append(layer.step())
 
-        print(len(schedule))
+        print()
+        print('Расписание:', schedule)
+        print('Дебаг:', len(schedule) - len(set(schedule)))
 
+        print()
         print_freindly('Укладка в памяти стандартная')
 
         memory_order = list(range(nc))
