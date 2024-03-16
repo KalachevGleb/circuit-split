@@ -1,6 +1,6 @@
 #!/bin/bash
 
-memSize=32 #KB
+memSize="$1" #KB
 time=1
 experimentCount=20
 
@@ -8,9 +8,10 @@ tempDir="blob/temp" #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 greedyExec="./blob/greedy${memSize}_simulator"
 stockExec="./blob/stock_simulator"
 jsonPath="blob/dep_graph-600K-new.json"
+outFile="blob/$1"
 mkdir -p "$tempDir"
 
-echo "[" > "$tempDir/log.json"
+echo "[" > "$outFile"
 
 echo "Стоковое расписание"
 echo "Сборка"
@@ -29,9 +30,9 @@ fi
 echo "Прогон"
 for i in $(seq 1 $experimentCount); do
     echo "$i/$experimentCount"
-    # "./$tempDir/work/generated_code/bin/simulator" "$time" >> "$tempDir/log.json"
-    "./$stockExec" "$time" >> "$tempDir/log.json"
-    echo "," >> "$tempDir/log.json"
+    # "./$tempDir/work/generated_code/bin/simulator" "$time" >> "$outFile"
+    "./$stockExec" "$time" >> "$outFile"
+    echo "," >> "$outFile"
 done
 
 echo "Жадное расписание"
@@ -51,10 +52,10 @@ fi
 echo "Прогон"
 for i in $(seq 1 $experimentCount); do
     echo "$i/$experimentCount"
-    "./$greedyExec" "$time" >> "$tempDir/log.json"
-    echo "," >> "$tempDir/log.json"
+    "./$greedyExec" "$time" >> "$outFile"
+    echo "," >> "$outFile"
 done
 
-echo "]" >> "$tempDir/log.json"
+echo "]" >> "$outFile"
 
 python plot.py $tempDir 

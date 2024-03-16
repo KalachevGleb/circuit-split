@@ -16,7 +16,7 @@ Layer = cpp.Layer
 # TODO
 # Добавитьразличные веса вершин
 
-FILENAME_IN = './dep_graph-600K-new.json'
+FILENAME_IN = './blob/dep_graph-600K-new.json'
 FRIENDLY = True
 MODE = int(sys.argv[1])
 MEM_SIZE = int(sys.argv[2]) * 1024
