@@ -23,7 +23,7 @@ if ! test -f "$stockExec"; then
     mkdir -p build
     cd build
     cmake ..
-    cmake --build . --config Release -- -j4
+    cmake --build . --config Release -- -j8
     cd ../../../../../
     cp ./$tempDir/work/generated_code/bin/simulator "$stockExec"
 fi
@@ -45,7 +45,7 @@ if ! test -f "$greedyExec"; then
     mkdir -p build
     cd build
     cmake ..
-    cmake --build . --config Release -- -j4
+    cmake --build . --config Release -- -j8
     cd ../../../../../
     cp ./$tempDir/work/generated_code/bin/simulator "$greedyExec"
 fi
@@ -58,4 +58,4 @@ done
 
 echo "]" >> "$outFile"
 
-python plot.py $tempDir 
+python plot.py $outFile 

@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def main():
-    fd = open(os.path.join(sys.argv[1], 'log.json'), 'r')
+    fd = open(os.path.join(sys.argv[1]), 'r')
     line = fd.read()
     line = line[:-4] + line[-3:]
     data = json.loads(line)
