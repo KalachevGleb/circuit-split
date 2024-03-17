@@ -17,7 +17,7 @@ def main():
     data = np.array([entry['ns_per_node'] for entry in data])
 
     plt.plot(data)
-    plt.savefig(os.path.join(sys.argv[1], 'plot.png'))
+    plt.savefig(sys.argv[1] + '.png')
 
 if __name__ == '__main__':
     main()

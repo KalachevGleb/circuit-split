@@ -278,7 +278,7 @@ def main():
         if not os.path.exists('blob'):
             os.mkdir('blob')
             
-        fd = open('blob/out.json', 'w')
+        fd = open(sys.argv[4], 'w')
         json.dump({
             'graph' : graph_raw_copy,
             'memory_order' : memory_order,

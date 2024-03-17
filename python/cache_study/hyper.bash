@@ -16,14 +16,14 @@ echo "[" > "$outFile"
 echo "Стоковое расписание"
 echo "Сборка"
 if ! test -f "$stockExec"; then
-    python gen.py 0 "$memSize" -1
+    python gen.py 0 "$memSize" -1 "blob/stock.json"
     rm -rf "$tempDir/work"
-    simulation --compiler clang++ "blob/out.json" "$tempDir/work" >> /dev/null
+    simulation --compiler g++ "blob/stock.json" "$tempDir/work" >> /dev/null
     cd blob/temp/work/generated_code/
     mkdir -p build
     cd build
     cmake ..
-    cmake --build . --config Release -- -j8
+    cmake --build . --config Release -- -j$2
     cd ../../../../../
     cp ./$tempDir/work/generated_code/bin/simulator "$stockExec"
 fi
@@ -38,14 +38,14 @@ done
 echo "Жадное расписание"
 echo "Сборка"
 if ! test -f "$greedyExec"; then
-    python gen.py 4 "$memSize" -1
+    python gen.py 4 "$memSize" -1 "blob/${memSize}.json"
     rm -rf "$tempDir/work"
-    simulation --compiler clang++ -B "blob/out.json" "$tempDir/work" >> /dev/null
+    simulation --compiler g++ -B "blob/${memSize}.json" "$tempDir/work" >> /dev/null
     cd blob/temp/work/generated_code/
     mkdir -p build
     cd build
     cmake ..
-    cmake --build . --config Release -- -j8
+    cmake --build . --config Release -- -j$2
     cd ../../../../../
     cp ./$tempDir/work/generated_code/bin/simulator "$greedyExec"
 fi
