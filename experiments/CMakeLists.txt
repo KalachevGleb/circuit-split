@@ -1,3 +1,4 @@
+cmake_policy(SET CMP0048 NEW)  # ??? to disable warning in CMake >=3.20
 project(experiments)
 cmake_minimum_required(VERSION 3.16)
 
@@ -10,3 +11,4 @@ add_subdirectory(eval_speed_test)
 add_subdirectory(layer_by_layer_test)
 add_subdirectory(thread_sync_test)
 add_subdirectory(simulation)
+add_subdirectory(cache_simulation)
