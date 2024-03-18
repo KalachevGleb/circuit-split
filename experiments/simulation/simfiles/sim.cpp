@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
         pout = &out;
     }
     Simulation sim;
-    auto [nsteps, total_time, s_per_node] = sim.run(time);
+    auto [nsteps, total_time, s_per_node, s_per_read] = sim.run(time);
     // output in JSON format
     *pout << "{\n";
     *pout << "  \"nsteps\": " << nsteps << ",\n";
@@ -29,6 +29,7 @@ int main(int argc, char** argv) {
     *pout << "  \"steps_per_second\": " << nsteps / total_time << ",\n";
     *pout << "  \"time_per_step\": " << total_time / nsteps << ",\n";
     *pout << "  \"ns_per_node\": " << s_per_node*1e9 << "\n";
+    *pout << "  \"ns_per_read\": " << s_per_read*1e9 << "\n";
     *pout << "}\n";
     return 0;
 }

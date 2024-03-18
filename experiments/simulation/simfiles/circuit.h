@@ -14,6 +14,7 @@ struct Circuit { // abstract class for circuit simulation
 
     virtual int num_threads() = 0;
     virtual int num_nodes() = 0;
+    virtual int num_reads() = 0;
     virtual void eval(int thread_id) = 0;
     virtual ~Circuit() = default;
     void next_clock() {
@@ -55,8 +56,8 @@ class Simulation {
 public:
     Simulation() : circuit(create_circuit()), num_threads(circuit->num_threads()) {}
 
-    tuple<int, double, double> run(double time) {
-        int numNodes = circuit->num_nodes();
+    tuple<int, double, double, double> run(double time) {
+        int numNodes = circuit->num_nodes(), numReads = circuit->num_reads();
         circuit->start(threads);
         int n = 0;
         Timer timer;
@@ -66,6 +67,6 @@ public:
         }
         double total_time = timer.getTime();
         circuit->stop(threads);
-        return {n, total_time, total_time / n / numNodes};
+        return {n, total_time, total_time / n / numNodes, total_time / n / numReads};
     }
 };

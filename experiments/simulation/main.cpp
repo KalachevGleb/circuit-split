@@ -342,7 +342,7 @@ struct CircuitGraph {
 
         int maxFiles = max<int>(1, std::thread::hardware_concurrency()*2);
         vector<bool> used(maxFiles, false);
-        int curr_file = 0;
+        int curr_file = 0, n_reads = 0;
         for (int i = 0; i < nthreads; i++) {
             int wait_point = 0, size = int(schedule[i].size());
             int total_size = 0;
@@ -353,6 +353,7 @@ struct CircuitGraph {
                     }
                 }
             }
+            n_reads += total_size;
             if (maxChunkSize && maxChunkSize < total_size) {
                 int nchunks = 0; //(size + maxChunkSize - 1) / maxChunkSize;
                 stringstream evalfunc;
@@ -384,6 +385,7 @@ struct CircuitGraph {
 
         file << "    int num_threads() override { return " << nthreads << "; }\n";
         file << "    int num_nodes() override { return " << num_nodes << "; }\n";
+        file << "    int num_reads() override { return " << n_reads << "; }\n";
 
         file << "    void eval(int thread_id) override {\n";
         file << "        switch(thread_id) {\n";
