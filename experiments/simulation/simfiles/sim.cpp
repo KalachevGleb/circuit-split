@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
     *pout << "  \"total_time\": " << total_time << ",\n";
     *pout << "  \"steps_per_second\": " << nsteps / total_time << ",\n";
     *pout << "  \"time_per_step\": " << total_time / nsteps << ",\n";
-    *pout << "  \"ns_per_node\": " << s_per_node*1e9 << "\n";
+    *pout << "  \"ns_per_node\": " << s_per_node*1e9 << ",\n";
     *pout << "  \"ns_per_read\": " << s_per_read*1e9 << "\n";
     *pout << "}\n";
     return 0;
