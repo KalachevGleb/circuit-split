@@ -17,7 +17,7 @@ echo "Стоковое расписание"
 echo "Сборка"
 if ! test -f "$stockExec"; then
     python gen.py 0 "$memSize" -1 "blob/stock.json"
-    rm -rf "$tempDir/work"
+    rm -rf "$tempDir"
     simulation --compiler g++ "blob/stock.json" "$tempDir/work" >> /dev/null
     cd blob/temp/work/generated_code/
     mkdir -p build
@@ -39,7 +39,7 @@ echo "Жадное расписание"
 echo "Сборка"
 if ! test -f "$greedyExec"; then
     python gen.py 4 "$memSize" -1 "blob/${memSize}.json"
-    rm -rf "$tempDir/work"
+    rm -rf "$tempDir"
     simulation --compiler g++ -B "blob/${memSize}.json" "$tempDir/work" >> /dev/null
     cd blob/temp/work/generated_code/
     mkdir -p build
