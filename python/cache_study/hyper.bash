@@ -17,11 +17,11 @@ echo "Сборка"
 if ! test -f "$stockExec"; then
     python gen.py 0 "$memSize" -1 "blob/stock.json"
     rm -rf "$tempDir"
-    simulation --compiler g++ "blob/stock.json" "$tempDir/work" >> /dev/null
+    simulation "blob/stock.json" "$tempDir/work" >> /dev/null
     cd blob/temp/work/generated_code/
     mkdir -p build
     cd build
-    cmake ..
+    cmake .. -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
     cmake --build . --config Release -- -j$2
     cd ../../../../../
     cp ./$tempDir/work/generated_code/bin/simulator "$stockExec"
@@ -39,11 +39,11 @@ echo "Сборка"
 if ! test -f "$greedyExec"; then
     python gen.py 4 "$memSize" -1 "blob/${memSize}.json"
     rm -rf "$tempDir"
-    simulation --compiler g++ -B "blob/${memSize}.json" "$tempDir/work" >> /dev/null
+    simulation "blob/${memSize}.json" "$tempDir/work" >> /dev/null
     cd blob/temp/work/generated_code/
     mkdir -p build
     cd build
-    cmake ..
+    cmake .. -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
     cmake --build . --config Release -- -j$2
     cd ../../../../../
     cp ./$tempDir/work/generated_code/bin/simulator "$greedyExec"
