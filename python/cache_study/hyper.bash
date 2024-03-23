@@ -7,7 +7,6 @@ experimentCount=20
 tempDir="blob/temp" #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 greedyExec="./blob/greedy${memSize}_simulator"
 stockExec="./blob/stock_simulator"
-jsonPath="blob/dep_graph-600K-new.json"
 outFile="blob/$1"
 mkdir -p "$tempDir"
 
