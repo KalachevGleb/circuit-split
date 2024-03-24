@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 project(cache_study)
 
 # Set Pybind11 version (optional)
-set(PYBIND11_VERSION 2.8.0)
+set(PYBIND11_VERSION 2.11)
 
 # Include the script to find or fetch Pybind11
 include(FindPybind11.cmake)

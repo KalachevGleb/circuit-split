@@ -7,7 +7,7 @@ if(NOT TARGET pybind11::pybind11)
 
     # Set Pybind11 version (default to 2.8.0 if not specified)
     if(NOT DEFINED PYBIND11_VERSION)
-        set(PYBIND11_VERSION 2.8.0)
+        set(PYBIND11_VERSION 2.11)
     endif()
 
     # Fetch Pybind11
