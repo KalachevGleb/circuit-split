@@ -10,16 +10,16 @@
 #include "cache.hpp"
 
 template <class T>
-std::string container2string(T container) {
+std::string container2string(const T& container) {
     std::vector<int> data;
-    for(auto entry: container) {
+    for(auto& entry: container) {
         data.push_back(entry);
     }
 
     std::sort(data.begin(), data.end());
 
     std::string ret;
-    for(auto entry: data) {
+    for(auto& entry: data) {
         ret += " ";
         ret += std::to_string(entry);
     }
@@ -28,9 +28,9 @@ std::string container2string(T container) {
     return ret;
 }
 
-class Error {
+class Error : public std::runtime_error {
 public:
-    Error(std::string msg = "Unknown error") {
+    explicit Error(std::string msg = "Unknown error") : runtime_error(msg) {
         std::cerr << msg << std::endl;
     }
 };
@@ -49,7 +49,7 @@ public:
         std::string parents2string() {
             std::vector<int> data;
 
-            for(auto vertex: parents) {     
+            for(auto& vertex: parents) {     
                 data.push_back(vertex -> id);
             }
 
@@ -59,7 +59,7 @@ public:
         std::string children2string() {
             std::vector<int> data;
 
-            for(auto vertex: children) {     
+            for(auto& vertex: children) {     
                 data.push_back(vertex -> id);
             }
 
@@ -67,14 +67,14 @@ public:
         }
     };
 
-    Graph(int size);
+    explicit Graph(int size);
     Graph(const Graph&) = delete;
     Graph& operator=(const Graph&) = delete;
     const Graph& operator=(const Graph&) const = delete;
     ~Graph();
 
     void add_edge(int start, int end);
-    void set_weights(std::vector<int> weights);
+    void set_weights(const std::vector<int>& weights);
     void set_score(int id, int score);
     std::vector<int> in_vertices() const;
     int size() const {
@@ -102,7 +102,7 @@ public:
         Graph::Vertex* vertex;
     };
 
-    Layer(int max_score);
+    explicit Layer(int max_score);
     ~Layer() {}//::cerr << "Сделай деструктор для Layer!" << std::endl;}
 
     void init_graph(int size) {
@@ -119,7 +119,7 @@ public:
 
         _graph -> add_edge(start, end);
     }
-    void set_weights(std::vector<int> weights) {
+    void set_weights(const std::vector<int>& weights) {
         if (_graph == nullptr) {
             throw Error("Граф не инициализирован");
         }
