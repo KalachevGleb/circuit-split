@@ -50,7 +50,7 @@ def main():
     ax2.legend()
 
     plt.tight_layout()
-    plt.savefig('blob/ns_per_node.png')
+    plt.savefig('blob/agregated.png')
 
 if __name__ == '__main__':
     main()
