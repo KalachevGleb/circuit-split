@@ -4,7 +4,7 @@ import json
 import tqdm
 
 def main():
-    fd = open('blob/dep_graph-600K-new.json', 'r')
+    fd = open('dep_graph-600K-new.json', 'r')
     edges = [(e[1], e[0]) for e in json.load(fd)['edges']]
     fd.close()
 
