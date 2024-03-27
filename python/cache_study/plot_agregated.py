@@ -49,12 +49,8 @@ def main():
     ax2.set_ylabel('Mean ns_per_read')
     ax2.legend()
 
-
     plt.tight_layout()
     plt.savefig('blob/ns_per_node.png')
-
-    plt.plot()
-    plt.savefig('blob/agregated.png')
 
 if __name__ == '__main__':
     main()
