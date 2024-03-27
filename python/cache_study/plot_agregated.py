@@ -11,7 +11,7 @@ STOCK_INDICES = [i for i in range(20)]
 GREEDY_INDICES = [i for i in range(20, 40)]
 
 def main():
-    filenames = list(map(str, [1, 2, 4, 8, 16, 32, 64, 128, 131072]))
+    filenames = list(map(str, [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 131072]))
 
     ns_per_node = {'stock' : [], 'greedy' : []}
     ns_per_read = {'stock' : [], 'greedy' : []}
@@ -43,14 +43,14 @@ def main():
 
     ax1.set_xlabel('Mem size')
     ax1.set_ylabel('Mean ns_per_node')
-    ax1.legend()
+    ax1.legend(loc='lower left')
 
     ax2.set_xlabel('Mem size')
     ax2.set_ylabel('Mean ns_per_read')
-    ax2.legend()
+    ax2.legend(loc='lower left')
 
     plt.tight_layout()
-    plt.savefig('blob/ns_per_node.png')
+    plt.savefig('blob/agregated.png')
 
 if __name__ == '__main__':
     main()
