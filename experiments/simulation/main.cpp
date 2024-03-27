@@ -356,22 +356,29 @@ struct CircuitGraph {
             n_reads += total_size;
             if (maxChunkSize && maxChunkSize < total_size) {
                 int nchunks = 0; //(size + maxChunkSize - 1) / maxChunkSize;
-                stringstream evalfunc;
+                stringstream evalfunc, evalfunc1000;
                 evalfunc << "    void eval_"<<i<<"() {\n";
+                evalfunc1000 << "    void eval_"<<i<<"_testspeed(int n) {\n";
                 for (int pos = 0; pos < size; nchunks++) {
                     //auto start = pos * maxChunkSize;//, end = min((j + 1) * maxChunkSize, size);
                     string funcname = "eval_" + to_string(i) + "_chunk_" + to_string(nchunks);
                     file << "    void " << funcname << "();\n";
                     evalfunc << "        " << funcname << "();\n";
+                    evalfunc1000 << "        for (int i = 0; i < n; i++) " << funcname << "();\n";
                     pos = gen_eval_thread(fn+"_eval_part"+to_string(curr_file)+".cpp", funcname, i, pos, size, maxChunkSize, wait_point, used[curr_file], data_start);//, use_templates);
                     used[curr_file] = true;
                     curr_file = (curr_file + 1) % maxFiles;
                 }
                 evalfunc << "    }\n";
+                evalfunc1000 << "    }\n";
                 file << evalfunc.str();
+                file << evalfunc1000.str();
             } else {
                 file << "    void eval_"<<i<<"();\n";
                 gen_eval_thread(fn+"_eval"+ to_string(i)+".cpp", "eval_"+to_string(i), i, 0, size, 1<<30, wait_point, false, data_start);//, use_templates);
+                file << "    void eval_"<<i<<"_testspeed(int n) {\n";
+                file << "        for (int i = 0; i < n; i++) eval_"<<i<<"();\n";
+                file << "    }\n";
             }
         }
         file << "    CircuitImpl() {\n";
@@ -391,6 +398,13 @@ struct CircuitGraph {
         file << "        switch(thread_id) {\n";
         for (int thread_id = 0; thread_id < nthreads; thread_id++) {
             file << "            case " << thread_id << ": return eval_" << thread_id << "();\n";
+        }
+        file << "        }\n";
+        file << "    }\n";
+        file << "    void eval_testspeed(int thread_id, int n) override {\n";
+        file << "        switch(thread_id) {\n";
+        for (int thread_id = 0; thread_id < nthreads; thread_id++) {
+            file << "            case " << thread_id << ": return eval_" << thread_id << "_testspeed(n);\n";
         }
         file << "        }\n";
         file << "    }\n";

@@ -22,6 +22,7 @@ int main(int argc, char** argv) {
     }
     Simulation sim;
     auto [nsteps, total_time, s_per_node, s_per_read] = sim.run(time);
+    auto [nsteps_1, total_time_1, s_per_node_ideal, s_per_read_ideal] = sim.run(time,1000);
     // output in JSON format
     *pout << "{\n";
     *pout << "  \"nsteps\": " << nsteps << ",\n";
@@ -29,7 +30,9 @@ int main(int argc, char** argv) {
     *pout << "  \"steps_per_second\": " << nsteps / total_time << ",\n";
     *pout << "  \"time_per_step\": " << total_time / nsteps << ",\n";
     *pout << "  \"ns_per_node\": " << s_per_node*1e9 << ",\n";
-    *pout << "  \"ns_per_read\": " << s_per_read*1e9 << "\n";
+    *pout << "  \"ns_per_read\": " << s_per_read*1e9 << ",\n";
+    *pout << "  \"ns_per_read_ideal\": " << s_per_read_ideal*1e9 << ",\n";
+    *pout << "  \"overhead\": " << (s_per_read/s_per_read_ideal) << "\n";
     *pout << "}\n";
     return 0;
 }
