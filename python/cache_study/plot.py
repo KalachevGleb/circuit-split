@@ -8,11 +8,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def main():
-    fd = open(os.path.join(sys.argv[1]), 'r')
-    line = fd.read()
-    line = line[:-4] + line[-3:]
-    data = json.loads(line)
-    fd.close()
+    with open(os.path.join(sys.argv[1]), 'r') as fd:
+        line = fd.read()
+        line = line[:-4] + line[-3:]
+        data = json.loads(line)
 
     data = np.array([entry['ns_per_node'] for entry in data])
 

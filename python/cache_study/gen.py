@@ -91,10 +91,9 @@ def progressbar_friendly(arg):
         return arg
 
 def main():
-    fd = open(FILENAME_IN, 'r')
-    graph_raw = json.load(fd)
-    graph_raw_copy = graph_raw.copy()
-    fd.close()
+    with open(FILENAME_IN, 'r') as fd:
+        graph_raw = json.load(fd)
+        graph_raw_copy = graph_raw.copy()
 
     nc = len(graph_raw['node_weights'])
     ec = len(graph_raw['edges'])
@@ -278,14 +277,13 @@ def main():
         if not os.path.exists('blob'):
             os.mkdir('blob')
             
-        fd = open(sys.argv[4], 'w')
-        json.dump({
-            'graph' : graph_raw_copy,
-            'memory_order' : memory_order,
-            'schedule' : [[[0, vertex_id] for vertex_id in schedule]],
-            'sync_points' : []
-        }, fd)
-        fd.close()
+        with open(sys.argv[4], 'w') as fd:
+            json.dump({
+                'graph' : graph_raw_copy,
+                'memory_order' : memory_order,
+                'schedule' : [[[0, vertex_id] for vertex_id in schedule]],
+                'sync_points' : []
+            }, fd)
 
     print_freindly('Готово! Have a nice day :)')
 
