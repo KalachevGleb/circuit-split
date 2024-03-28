@@ -302,7 +302,7 @@ public:
     }
 
     ///////// converters /////////
-    void toString(std::string &out, bool wrapLines = false) const;
+    void toString(std::string &out, bool wrapLines = false, int indent=0) const;
     std::string toString(bool wrapLines = false) const {
         std::string out;
         toString(out, wrapLines);
