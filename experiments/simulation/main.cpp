@@ -327,6 +327,7 @@ struct CircuitGraph {
             for (auto [type, j] : schedule[i]) {
                 if (type == 0) {
                     if (j >= num_nodes || j < 0) {
+                        //cout << "Error: invalid node in thread " << i <<": ["<<type<<","<<j<<"]"<< endl;
                         invalid_sch.push_back(j);
                     } else {
                         count_sch[j]++;
@@ -338,11 +339,12 @@ struct CircuitGraph {
                     }
                 } else if (type == 1) {
                     if (prevsync >= j && !increase_err) {
-                        cout << "Error: synchronization points are not in increasing order in thread " << i << endl;
+                        //cout << "Error: synchronization points are not in increasing order in thread " << i << endl;
                         nerr++;
                         increase_err = 1;
                     }
                     if (j < 0 || j >= sync_points.size()) {
+                        //cout << "Error: invalid synchronization point in thread " << i <<": ["<<type<<","<<j<<"]"<< endl;
                         invalid_sch.push_back(j);
                     } else {
                         count_syncp[j]++;
@@ -355,6 +357,7 @@ struct CircuitGraph {
                         }
                     }
                 } else {
+                    //cout << "Error: invalid type in thread " << i <<": ["<<type<<","<<j<<"]"<< endl;
                     invalid_sch.push_back(j);
                 }
                 n++;
@@ -513,14 +516,22 @@ struct CircuitGraph {
         int start = 0, W = node_weights[node];
         S = S*2 + 1;
         int ncmd = 0;
+        vector<string> assignments(W);
         for (int arg : args) {
             int W1 = node_weights[arg];
             for (int j = 0; j < W1; j++) {
-                file << "    state.data["<<data_start[node] + (j+start)%W<<"] += state.data["<<(data_start[arg]+j)<<"]*" << S << ";\n";
+                if(!assignments[(j+start)%W].empty()) assignments[(j+start)%W] += " + ";
+                assignments[(j+start)%W] += "state.data["+ to_string(data_start[arg]+j)+"]*" + to_string(S);
+                //file << "    state.data["<<data_start[node] + (j+start)%W<<"] += state.data["<<(data_start[arg]+j)<<"]*" << S << ";\n";
                 ncmd++;
             }
             S = (S>>2)*7 | 1;
             start = (start+W1)%W;
+        }
+        for (int i = 0; i < W; i++) {
+            if (!assignments[i].empty()) {
+                file << "    state.data["<<data_start[node]+i<<"] = " << assignments[i] << ";\n";
+            }
         }
         return ncmd;
     }

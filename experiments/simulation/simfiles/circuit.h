@@ -59,6 +59,7 @@ class Simulation {
     int num_threads;
 public:
     Simulation() : circuit(create_circuit()), num_threads(circuit->num_threads()) {}
+    int get_num_threads() const { return num_threads; }
 
     tuple<int, double, double, double> run(double time, int test_speed_n=1) {
         int numNodes = circuit->num_nodes(), numReads = circuit->num_reads();
