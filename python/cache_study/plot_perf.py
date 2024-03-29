@@ -17,11 +17,17 @@ def main():
 
     misses = []
     refs = []
+    l2_misses = []
+    l2_refs = []
     for i in [2 ** j for j in range(13)]:
         misses.append(np.mean(data[str(i)]['cache-misses']))
         refs.append(np.mean(data[str(i)]['cache-references']))
+        l2_misses.append(np.mean(data[str(i)]['l2_miss']))
+        l2_refs.append(np.mean(data[str(i)]['l2_ref']))
     misses.append(np.mean(data['stock']['cache-misses']))
     refs.append(np.mean(data['stock']['cache-references']))
+    l2_misses.append(np.mean(data['stock']['l2_miss']))
+    l2_refs.append(np.mean(data['stock']['l2_ref']))
 
     fig, ax = plt.subplots()
 
@@ -30,6 +36,8 @@ def main():
 
     ax.plot(misses, label='cache-misses')
     ax.plot(refs, label='cache-references')
+    ax.plot(l2_misses, label='l2-misses')
+    ax.plot(l2_refs, label='l2-refs')
     
     ax.legend(loc='upper left')
 

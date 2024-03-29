@@ -37,11 +37,15 @@ def main():
         
         misses = [int(first_digits(remove_spaces(line))) for line in data if 'cache-misses' in line]
         refs = [int(first_digits(remove_spaces(line))) for line in data if 'cache-references' in line]
+        l2_miss = [int(first_digits(remove_spaces(line))) for line in data if 'l2_rqsts.all_demand_miss' in line]
+        l2_ref = [int(first_digits(remove_spaces(line))) for line in data if 'l2_rqsts.all_demand_references' in line]
 
         name = os.path.basename(path).split('.')[0]
         res[name] = {
             'cache-misses' : misses,
-            'cache-references' : refs
+            'cache-references' : refs,
+            'l2_miss' : l2_miss,
+            'l2_ref' : l2_ref
         }
 
     with open('blob/perf.json', 'w') as fd:
