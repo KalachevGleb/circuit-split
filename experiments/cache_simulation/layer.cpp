@@ -4,7 +4,7 @@
 
 using namespace std;
 
-explicit Graph::Graph(int size) {
+Graph::Graph(int size) {
     _mem = new Vertex[size];
     _size = size;
 
@@ -61,7 +61,7 @@ vector<int> Graph::in_vertices() const{
     return ret;
 }
 
-explicit Layer::Layer(int max_score) {
+Layer::Layer(int max_score) {
     _graph = nullptr;
     _cache = nullptr;
 
