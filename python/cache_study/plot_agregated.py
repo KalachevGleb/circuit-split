@@ -11,7 +11,7 @@ STOCK_INDICES = [i for i in range(20)]
 GREEDY_INDICES = [i for i in range(20, 40)]
 
 if len(sys.argv) == 1:
-    PATH = './blob'
+    PATH = './compilated/g++_ssd'
 else:
     PATH = sys.argv[1]
 

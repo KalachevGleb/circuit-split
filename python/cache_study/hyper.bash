@@ -15,7 +15,7 @@ echo "[" > "$outFile"
 echo "Стоковое расписание"
 echo "Сборка"
 if ! test -f "$stockExec"; then
-    python gen.py 0 "$memSize" -1 "blob/stock.json"
+    python gen.py 0 "$memSize" -1 "blob/stock.json" "$3"
     rm -rf "$tempDir"
     simulation "blob/stock.json" "$tempDir/work" >> /dev/null
     cd blob/temp/work/generated_code/
@@ -37,7 +37,7 @@ done
 echo "Жадное расписание"
 echo "Сборка"
 if ! test -f "$greedyExec"; then
-    python gen.py 4 "$memSize" -1 "blob/${memSize}.json"
+    python gen.py 4 "$memSize" -1 "blob/${memSize}.json" "$3"
     rm -rf "$tempDir"
     simulation "blob/${memSize}.json" "$tempDir/work" >> /dev/null
     cd blob/temp/work/generated_code/
