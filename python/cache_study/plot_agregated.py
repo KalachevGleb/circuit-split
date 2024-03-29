@@ -10,6 +10,11 @@ import matplotlib.pyplot as plt
 STOCK_INDICES = [i for i in range(20)]
 GREEDY_INDICES = [i for i in range(20, 40)]
 
+if len(sys.argv) == 1:
+    PATH = './blob'
+else:
+    PATH = sys.argv[1]
+
 def main():
     filenames = list(map(str, [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 131072]))
 
@@ -18,7 +23,7 @@ def main():
     mem_sizes = [int(fn) for fn in filenames]
 
     for fn in filenames:
-        with open(os.path.join('blob', fn), 'r') as fd:
+        with open(os.path.join(PATH, fn), 'r') as fd:
             line = fd.read()
             line = line[:-4] + line[-3:]
             data = json.loads(line)
@@ -50,7 +55,15 @@ def main():
     ax2.legend(loc='lower left')
 
     plt.tight_layout()
-    plt.savefig('blob/agregated.png')
+    plt.savefig(os.path.join(PATH, 'agregated.png'))
+
+    print('Ускорение ns_per_node:', str(np.round(np.mean(np.array(ns_per_node['greedy']) / np.array(ns_per_node['stock'])) * 100 - 100, 2)), '%')
+    print('Ускорение ns_per_read:', str(np.round(np.mean(np.array(ns_per_read['greedy']) / np.array(ns_per_read['stock'])) * 100 - 100, 2)), '%')
+
+    sizes = [os.path.getsize(os.path.join(PATH, 'greedy' + i + '_simulator')) for i in filenames]
+    size = os.path.getsize(os.path.join(PATH, 'stock_simulator'))
+
+    print('Отношение объемов исполняемых файлов:', str(round(np.mean(sizes) / size * 100 - 100, 2)) + '%')
 
 if __name__ == '__main__':
     main()
