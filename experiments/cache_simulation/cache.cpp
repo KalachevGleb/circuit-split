@@ -54,10 +54,10 @@ bool Cache::contains(int id) {
     return _map.contains(id);
 }
 
-int Cache::antiscore(vector<int> ids) {
+int Cache::antiscore(const vector<int>& ids) {
     int ret = 0;
 
-    for(auto id: ids) {
+    for(auto& id: ids) {
         if(this -> contains(id)) {
             ret += _map[id] -> weight;
         }

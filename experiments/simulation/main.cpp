@@ -32,6 +32,144 @@ bool contains(const Cont &c, const T &v) {
     return find(c.begin(), c.end(), v) != c.end();
 }
 
+class Cache {
+    int line_size;
+    int num_lines;
+    int line_mask, line_shift;
+    struct Entry {
+        int addr = -1;
+        uint64_t last_access;
+        Entry* next = nullptr, *prev = nullptr;
+        Entry& remove() {
+            prev->next = next;
+            next->prev = prev;
+            return *this;
+        }
+        void insertAfter(Entry *e) {
+            next = e->next;
+            prev = e;
+            e->next->prev = this;
+            e->next = this;
+        }
+    };
+    //Entry nil;
+    Entry head, free;
+    vector<Entry> entries;
+    unordered_map<int, Entry*> cached;
+    uint64_t time = 0;
+    uint64_t hits = 0, misses = 0;
+public:
+    uint64_t getHits() const {
+        return hits;
+    }
+    uint64_t getMisses() const {
+        return misses;
+    }
+    uint64_t getAccesses() const {
+        return hits + misses;
+    }
+    Cache(int line_size, int num_lines) : line_size(line_size), num_lines(num_lines) {
+        line_mask = line_size - 1;
+        if ((line_size & line_mask) != 0)
+            throw invalid_argument("line size must be a power of 2");
+        line_shift = 0;
+        while ((1 << line_shift) < line_size)
+            line_shift++;
+
+        head.next = head.prev = &head;
+        free.next = free.prev = &free;
+        entries.resize(num_lines);
+        for (int i = num_lines; i--; ) {
+            entries[i].insertAfter(&free);
+        }
+    }
+    bool _get(int line, bool write) {
+        auto it = cached.find(line);
+        Entry *e;
+        bool hit = true;
+        if (it != cached.end()) {
+            if(!write)
+                hits++;
+            e = it->second;
+        } else {
+            if (!write)
+                misses++;
+            if (free.next != &free) {
+                e = free.next;
+            } else {
+                e = head.prev;
+                cached.erase(e->addr);
+            }
+            e->addr = line;
+            cached[line] = e;
+            hit = false;
+        }
+        e->last_access = time++;
+        e->remove().insertAfter(&head);
+        return hit;
+    }
+    bool access(int ptr, int size, bool write) {
+        int first_line = ptr >> line_shift, last_line = (ptr + size - 1) >> line_shift;
+        bool hit = true;
+        for (int i = first_line; i <= last_line; i++) {
+            if(!_get(i, write))
+                hit = false;
+        }
+        return hit;
+    }
+    bool read(int ptr, int size) {
+        return access(ptr, size, false);
+    }
+    bool write(int ptr, int size) {
+        return access(ptr, size, true);
+    }
+    void reset() {
+        head.next = head.prev = &head;
+        free.next = free.prev = &free;
+        cached.clear();
+        for (int i = num_lines; i--; ) {
+            entries[i].insertAfter(&free);
+        }
+        time = 0;
+        hits = 0;
+        misses = 0;
+    }
+};
+
+struct CacheStructure {
+    Cache l1, l2, l3;
+    uint64_t memory_accesses = 0;
+    CacheStructure(int linesize, int l1size, int l2size, int l3size) :
+        l1(linesize, l1size/linesize), l2(linesize, l2size/linesize), l3(linesize, l3size/linesize) {}
+    void read(int ptr, int size) {
+        if (!l1.read(ptr, size) && !l2.read(ptr, size) && !l3.read(ptr, size))
+            memory_accesses++;
+    }
+    void write(int ptr, int size) {
+        if (!l1.write(ptr, size) && !l2.write(ptr, size) && !l3.write(ptr, size)){}
+    }
+    JSON to_json() const {
+        return std::map<JSON, JSON>{
+            {"l1", std::map<JSON, JSON>{
+                {"hits", l1.getHits()},
+                {"misses", l1.getMisses()},
+                {"accesses", l1.getAccesses()}
+            }},
+            {"l2", std::map<JSON, JSON>{
+                {"hits", l2.getHits()},
+                {"misses", l2.getMisses()},
+                {"accesses", l2.getAccesses()}
+            }},
+            {"l3", std::map<JSON, JSON>{
+                {"hits", l3.getHits()},
+                {"misses", l3.getMisses()},
+                {"accesses", l3.getAccesses()}
+            }},
+            {"memory_accesses", memory_accesses}
+        };
+    }
+};
+
 struct CircuitGraph {
     size_t num_nodes = 0;
     vector<int> node_weights;   // weight of each node
@@ -73,6 +211,72 @@ struct CircuitGraph {
         json.at("schedule").get(schedule);
         json.at("sync_points").get(sync_points);
         nthreads = int(schedule.size());
+    }
+    pair<vector<int>,int> prepareDataStart() {
+        vector<int> data_start(num_nodes,0);
+        int total_weight = 0;
+        for (int i = 0; i < num_nodes; i++) {
+            int node_id = mem_order[i];
+            data_start[node_id] = total_weight;
+            total_weight += node_weights[node_id];
+        }
+        return {data_start, total_weight};
+    }
+    void estimateCaching(CacheStructure &cache) {
+        if(schedule.size()!=1){
+            throw invalid_argument("Caching estimation is only supported for single-threaded schedules");
+        }
+        auto [data_start, size] = prepareDataStart();
+        for (auto& [type, node] : schedule[0]) {
+            if (type == 1) continue;
+            int nodepos = 0;
+            for (int dep : deps[node]) {
+                for(int j=0; j<node_weights[dep]; j++, nodepos++) {
+                    cache.read((data_start[dep] + j) * 4, 4);
+                    cache.read((data_start[node] + nodepos%node_weights[node]) * 4, 4);
+                    cache.write((data_start[node] + nodepos%node_weights[node]) * 4, 4);
+                }
+            }
+            //if (!deps[node].empty())
+            //    for (int j = 0; j < node_weights[node]; j++)
+            //        cache.write((data_start[node]+j)*4, 4);
+        }
+    }
+    pair<double,double> testSpeedInternal(double time, int testChunkSize, int iterPerChunk) {
+        if(schedule.size()!=1){
+            throw invalid_argument("Speed test is only supported for single-threaded schedules");
+        }
+        auto [data_start, size] = prepareDataStart();
+        vector<int> data(size);
+        for (int i = 0; i < size; i++) {
+            data[i] = i;
+        }
+        vector<pair<int, int>> test_schedule;
+        for (auto& [type, node] : schedule[0]) {
+            if (type == 1) continue;
+            int nodepos = 0;
+            for (int dep : deps[node]) {
+                for(int j=0; j<node_weights[dep]; j++, nodepos++)
+                    test_schedule.emplace_back(data_start[node]+nodepos%node_weights[node], data_start[dep]+j);
+            }
+        }
+        int schlen = int(test_schedule.size());
+        Timer timer;
+        double t = 0;
+        int niter = 0;
+        for(; t < time; niter+=iterPerChunk) {
+            for (int i = 0; i < schlen; i += testChunkSize) {
+                int beg = i, end = min(i + testChunkSize, schlen);
+                for (int j = 0; j < iterPerChunk; j++) {
+                    for (int k = beg; k < end; k++) {
+                        auto [to, from] = test_schedule[k];
+                        data[to] += data[from];
+                    }
+                }
+            }
+            t = timer.getTime();
+        }
+        return {t / double(niter) / schlen, t / double(niter)};
     }
 
     bool checkCorrectness() const {
@@ -123,6 +327,7 @@ struct CircuitGraph {
             for (auto [type, j] : schedule[i]) {
                 if (type == 0) {
                     if (j >= num_nodes || j < 0) {
+                        //cout << "Error: invalid node in thread " << i <<": ["<<type<<","<<j<<"]"<< endl;
                         invalid_sch.push_back(j);
                     } else {
                         count_sch[j]++;
@@ -134,11 +339,12 @@ struct CircuitGraph {
                     }
                 } else if (type == 1) {
                     if (prevsync >= j && !increase_err) {
-                        cout << "Error: synchronization points are not in increasing order in thread " << i << endl;
+                        //cout << "Error: synchronization points are not in increasing order in thread " << i << endl;
                         nerr++;
                         increase_err = 1;
                     }
                     if (j < 0 || j >= sync_points.size()) {
+                        //cout << "Error: invalid synchronization point in thread " << i <<": ["<<type<<","<<j<<"]"<< endl;
                         invalid_sch.push_back(j);
                     } else {
                         count_syncp[j]++;
@@ -151,6 +357,7 @@ struct CircuitGraph {
                         }
                     }
                 } else {
+                    //cout << "Error: invalid type in thread " << i <<": ["<<type<<","<<j<<"]"<< endl;
                     invalid_sch.push_back(j);
                 }
                 n++;
@@ -309,18 +516,26 @@ struct CircuitGraph {
         int start = 0, W = node_weights[node];
         S = S*2 + 1;
         int ncmd = 0;
+        vector<string> assignments(W);
         for (int arg : args) {
             int W1 = node_weights[arg];
             for (int j = 0; j < W1; j++) {
-                file << "    state.data["<<data_start[node] + (j+start)%W<<"] += state.data["<<(data_start[arg]+j)<<"]*" << S << ";\n";
+                if(!assignments[(j+start)%W].empty()) assignments[(j+start)%W] += " + ";
+                assignments[(j+start)%W] += "state.data["+ to_string(data_start[arg]+j)+"]*" + to_string(S);
+                //file << "    state.data["<<data_start[node] + (j+start)%W<<"] += state.data["<<(data_start[arg]+j)<<"]*" << S << ";\n";
                 ncmd++;
             }
             S = (S>>2)*7 | 1;
             start = (start+W1)%W;
         }
+        for (int i = 0; i < W; i++) {
+            if (!assignments[i].empty()) {
+                file << "    state.data["<<data_start[node]+i<<"] = " << assignments[i] << ";\n";
+            }
+        }
         return ncmd;
     }
-    void gen_code(const string &fn, int maxChunkSize/*, bool use_templates*/) const {
+    void gen_code(const string &fn, int maxChunkSize/*, bool use_templates*/, int testSpeedChunks) const {
         vector<string> node_names(num_nodes);
         ofstream file(fn+"_impl.h"), cppfile(fn+".cpp");
         file << "#include \"circuit.h\"\n";
@@ -354,24 +569,40 @@ struct CircuitGraph {
                 }
             }
             n_reads += total_size;
+            int chunksPerSpeedTest = max((testSpeedChunks + maxChunkSize - 1) / maxChunkSize, 1);
             if (maxChunkSize && maxChunkSize < total_size) {
                 int nchunks = 0; //(size + maxChunkSize - 1) / maxChunkSize;
-                stringstream evalfunc;
+                stringstream evalfunc, evalfunc1000;
                 evalfunc << "    void eval_"<<i<<"() {\n";
+                evalfunc1000 << "    void eval_"<<i<<"_testspeed(int n) {\n";
                 for (int pos = 0; pos < size; nchunks++) {
                     //auto start = pos * maxChunkSize;//, end = min((j + 1) * maxChunkSize, size);
                     string funcname = "eval_" + to_string(i) + "_chunk_" + to_string(nchunks);
                     file << "    void " << funcname << "();\n";
                     evalfunc << "        " << funcname << "();\n";
+                    //evalfunc1000 << "        for (int i = 0; i < n; i++) " << funcname << "();\n";
                     pos = gen_eval_thread(fn+"_eval_part"+to_string(curr_file)+".cpp", funcname, i, pos, size, maxChunkSize, wait_point, used[curr_file], data_start);//, use_templates);
                     used[curr_file] = true;
                     curr_file = (curr_file + 1) % maxFiles;
                 }
+                for (int j=0; j<nchunks; j+=chunksPerSpeedTest) {
+
+                    evalfunc1000 << "        for (int i = 0; i < n; i++) {\n";
+                    for (int k = j; k<min(j+chunksPerSpeedTest, nchunks); k++) {
+                        evalfunc1000 << "            eval_"<<i<<"_chunk_"<<k<<"();\n";
+                    }
+                    evalfunc1000 << "        }\n";
+                }
                 evalfunc << "    }\n";
+                evalfunc1000 << "    }\n";
                 file << evalfunc.str();
+                file << evalfunc1000.str();
             } else {
                 file << "    void eval_"<<i<<"();\n";
                 gen_eval_thread(fn+"_eval"+ to_string(i)+".cpp", "eval_"+to_string(i), i, 0, size, 1<<30, wait_point, false, data_start);//, use_templates);
+                file << "    void eval_"<<i<<"_testspeed(int n) {\n";
+                file << "        for (int i = 0; i < n; i++) eval_"<<i<<"();\n";
+                file << "    }\n";
             }
         }
         file << "    CircuitImpl() {\n";
@@ -391,6 +622,13 @@ struct CircuitGraph {
         file << "        switch(thread_id) {\n";
         for (int thread_id = 0; thread_id < nthreads; thread_id++) {
             file << "            case " << thread_id << ": return eval_" << thread_id << "();\n";
+        }
+        file << "        }\n";
+        file << "    }\n";
+        file << "    void eval_testspeed(int thread_id, int n) override {\n";
+        file << "        switch(thread_id) {\n";
+        for (int thread_id = 0; thread_id < nthreads; thread_id++) {
+            file << "            case " << thread_id << ": return eval_" << thread_id << "_testspeed(n);\n";
         }
         file << "        }\n";
         file << "    }\n";
@@ -419,6 +657,13 @@ int run(int argc, char *argv[]) {
         {"debug", "d", JSON::Boolean, "Compile generated code with debug flags", false},
         {"rebuild", "B", JSON::Boolean, "Clean the build directory before generating code", false},
         {"compiler", "c", JSON::String, "C++ compiler to use", ""},
+        {"internal", "", JSON::Boolean, "Don't generate C++ code, test immediately", false},
+        {"cache-test-size", "", JSON::Integer, "Number of commands in one chunk used in speed test", 0},
+        {"est", "", JSON::Boolean, "Estimate cache usage", false},
+        {"l1", "", JSON::Integer, "L1 cache size", 64*1024},
+        {"l2", "", JSON::Integer, "L2 cache size", 1024*1024},
+        {"l3", "", JSON::Integer, "L3 cache size", 8192*1024},
+        {"cache-line", "", JSON::Integer, "Cache line size", 64},
         //{"profile", "p", JSON::Boolean, "Compile generated code with profiling flags (e.g. -pg)", false},
         {"time", "t", JSON::Double, "Test running time (in seconds)", 1.0},
         {"help", "h", JSON::Boolean, "Print this help message", false},
@@ -472,6 +717,20 @@ int run(int argc, char *argv[]) {
         cout << "Graph is not correct" << endl;
         return 1;
     }
+    if (args["est"]){
+        CacheStructure cache(args["cache-line"].as<int>(), args["l1"].as<int>(), args["l2"].as<int>(), args["l3"].as<int>());
+        graph.estimateCaching(cache);
+        JSON res = cache.to_json();
+        cout << "Cache usage estimate: " << endl;
+        cout << res.toString(true) << endl;
+    }
+    if(args["internal"]) {
+        auto [ns_per_read, time] = graph.testSpeedInternal(args["time"].as<double>(), 1<<30, 1);
+        auto [ns_per_read_ideal, time_ideal] = graph.testSpeedInternal(args["time"].as<double>(), max(args["cache-test-size"].as<int>(), 1024), 128);
+        cout << "Internal speed test:         " << ns_per_read*1e9 << " ns per read, " << time*1e3 << " ms" << endl;
+        cout << "Internal speed test (ideal): " << ns_per_read_ideal*1e9 << " ns per read, " << time_ideal*1e3 << " ms" << endl;
+        return 0;
+    }
 
     auto work_path = args["output_path"].str();
     int maxChunkSize = args["chunk-size"].as<int>();
@@ -522,7 +781,7 @@ int run(int argc, char *argv[]) {
     }
     // generate the code
     timer.reset();
-    graph.gen_code(output_path+"gen_circuit", maxChunkSize);//, !args["no-templates"].as<bool>());
+    graph.gen_code(output_path+"gen_circuit", maxChunkSize, args["cache-test-size"].as<int>());//, !args["no-templates"].as<bool>());
     if (verbose) {
         cout << "Code generation time: " << timer.getTime() << " s" << endl;
     }

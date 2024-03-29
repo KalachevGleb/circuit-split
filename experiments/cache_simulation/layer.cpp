@@ -4,7 +4,7 @@
 
 using namespace std;
 
-Graph::Graph(int size) {
+explicit Graph::Graph(int size) {
     _mem = new Vertex[size];
     _size = size;
 
@@ -31,7 +31,7 @@ void Graph::add_edge(int start, int end) {
     _mem[end].codegree += 1;
 }
 
-void Graph::set_weights(std::vector<int> weights) {
+void Graph::set_weights(const std::vector<int>& weights) {
     if(weights.size() != _size) {
         throw Error("В set_weights передан массив неподходящего размера");
     }
@@ -61,7 +61,7 @@ vector<int> Graph::in_vertices() const{
     return ret;
 }
 
-Layer::Layer(int max_score) {
+explicit Layer::Layer(int max_score) {
     _graph = nullptr;
     _cache = nullptr;
 
@@ -82,7 +82,7 @@ void Layer::start() {
         throw Error("Не найдены входные вершины");
     }
 
-    for(auto id: ids) {
+    for(auto& id: ids) {
         if(_graph -> at(id).score < 0 || _graph -> at(id).weight < 0) {
             //cout << endl;
             //cout << "id: " << id << endl;
@@ -143,13 +143,13 @@ int Layer::step() {
     int weight = _lists[_curr_min] -> vertex -> weight;
 
     auto cache_garbage = _cache -> push(id, weight);
-    for(auto entry: cache_garbage) {
+    for(auto& entry: cache_garbage) {
         recalculate_ids.push_back(entry.id);
     }
 
-    for(auto parent: _id2node[id] -> vertex -> parents) {
+    for(auto& parent: _id2node[id] -> vertex -> parents) {
         auto cache_garbage = _cache -> push(parent -> id, parent -> weight);
-        for(auto entry: cache_garbage) {
+        for(auto& entry: cache_garbage) {
             recalculate_ids.push_back(entry.id);
         }
     }
@@ -245,7 +245,7 @@ int Layer::step() {
 
     // Пересчитываем скоры, где это требуется
 
-    for(auto recalc_id: recalculate_ids) {
+    for(auto& recalc_id: recalculate_ids) {
         if(!_id2node.contains(recalc_id)) {
             continue;
         }

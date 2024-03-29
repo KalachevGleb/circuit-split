@@ -7,9 +7,11 @@
 
 using namespace std;
 
-void JSON::toString(std::string &out, bool wrapLines) const {
-    std::visit([&out, wrapLines](auto&& arg) {
+void JSON::toString(std::string &out, bool wrapLines, int indent) const {
+    string prefix(indent, ' ');
+    std::visit([&out, wrapLines, &prefix, indent](auto&& arg) {
         using T = std::decay_t<decltype(arg)>;
+        //out += prefix;
         if constexpr (std::is_same_v<T, std::string>) {
             out += '"';
             for (char c : arg) {
@@ -34,9 +36,9 @@ void JSON::toString(std::string &out, bool wrapLines) const {
             }
             for (size_t i = 0; i < arg.size(); ++i) {
                 if (wrapLines) {
-                    out += "  ";
+                    out += prefix+"  ";
                 }
-                arg[i].toString(out, wrapLines);
+                arg[i].toString(out, wrapLines, indent+2);
                 if (i != arg.size() - 1) {
                     out += ',';
                 }
@@ -45,7 +47,7 @@ void JSON::toString(std::string &out, bool wrapLines) const {
                 }
             }
             if (wrapLines) {
-                out += "  ";
+                out += prefix;
             }
             out += ']';
         } else if constexpr (std::is_same_v<T, std::map<JSON, JSON>>) {
@@ -56,14 +58,14 @@ void JSON::toString(std::string &out, bool wrapLines) const {
             size_t i = 0;
             for (auto& [key, value] : arg) {
                 if (wrapLines) {
-                    out += "  ";
+                    out += prefix + "  ";
                 }
-                key.toString(out, wrapLines);
+                key.toString(out, wrapLines, indent+2);
                 out += ':';
                 if (wrapLines) {
                     out += ' ';
                 }
-                value.toString(out, wrapLines);
+                value.toString(out, wrapLines, indent+2);
                 if (i != arg.size() - 1) {
                     out += ',';
                 }
@@ -73,7 +75,7 @@ void JSON::toString(std::string &out, bool wrapLines) const {
                 ++i;
             }
             if (wrapLines) {
-                out += "  ";
+                out += prefix;
             }
             out += '}';
         } else {

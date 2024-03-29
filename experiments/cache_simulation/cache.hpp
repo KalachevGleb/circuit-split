@@ -21,10 +21,10 @@ class Cache {
     int _allocated;
     
 public:
-    Cache(int capacity) : _capacity(capacity), _allocated(0) {};
+    explicit Cache(int capacity) : _capacity(capacity), _allocated(0) {};
 
     std::vector<CacheEntry> push(int id, int weight);
     bool contains(int id);
-    int antiscore(std::vector<int> ids);
+    int antiscore(const std::vector<int>& ids);
     int weight(int id);
 };

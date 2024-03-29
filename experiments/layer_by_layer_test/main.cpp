@@ -158,7 +158,9 @@ struct CircuitGraph {
         dep_data_pos.resize(num_nodes);
         dep_weights.resize(num_nodes);
         int pos = 0, dep_pos = 0;
+
         for (auto & layer : layers) {
+            std::sort(layer.begin(), layer.end());
             for (int node : layer) {
                 data_pos[node] = pos;
                 pos += node_weights[node];
@@ -239,7 +241,7 @@ struct CircuitGraph {
             // register switch
             switch_regs(reg_edges.size() * thread_id / threads.size(), reg_edges.size() * (thread_id+1) / threads.size());
             // compute nodes
-            for (int il = 0; il < layers.size(); il++) {
+            for (int il = 1; il < layers.size(); il++) {
                 // wait for other worker threads to finish previous layer
                 spin_barrier->synchronize();
                 //barrier->synchronize();
@@ -250,22 +252,45 @@ struct CircuitGraph {
         }
     }
     void split_for_threads(int num_threads) {
+        vector<int> node_threads(num_nodes, -1);
+        int cross_thread_reads = 0, total_reads = 0;
         auto nlayers = layers.size();
         thread_layers.assign(num_threads, vector<vector<int>>(nlayers));
-        for (int i = 0; i < nlayers; i++) {
+        vector<int> inputs;
+        for (int thread_id = 0; thread_id < num_threads; thread_id++) {
+            int b = reg_edges.size() * thread_id / num_threads, e = reg_edges.size() * (thread_id+1) / num_threads;
+            for (int i = b; i < e; i++) {
+                auto [to, from] = reg_edges[i];
+                node_threads[to] = thread_id;
+                inputs.push_back(to);
+            }
+        }
+        sort(inputs.begin(), inputs.end());
+        if(inputs!=layers[0]) cout << "warning: inputs not equal to layers[0]" << endl;
+        for (int i = 1; i < nlayers; i++) {
             int weight = 0;
             for (int node: layers[i]) {
                 weight += dep_weights[node];
             }
             int curr_weight = 0, curr_thread = 0;
             for (int node: layers[i]) {
-                if (curr_weight*num_threads > weight*(curr_thread+1)) {
+                if ((curr_weight+dep_weights[node])*num_threads > weight*(curr_thread+1)) {
                     curr_thread++;
                 }
                 curr_weight += dep_weights[node];
                 thread_layers[curr_thread][i].push_back(node);
+                if (deps[node].size())
+                    node_threads[node] = curr_thread;
+                for (int dep: deps[node]) {
+                    total_reads += node_weights[dep];
+                    if( node_threads[dep] ==-1) node_threads[dep] = curr_thread;
+                    else if (node_threads[dep] != curr_thread) {
+                        cross_thread_reads += node_weights[dep];
+                    }
+                }
             }
         }
+        cout << "Cross-thread reads: " << cross_thread_reads << " out of " << total_reads << " (" << 100.0*cross_thread_reads/total_reads << "%)"<< endl;
         start_threads(num_threads);
     }
 
@@ -281,8 +306,9 @@ struct CircuitGraph {
 
     void compute() {
         switch_regs(0, reg_edges.size());
-        for (auto &layer: layers) {
-            for (int node: layer) {
+
+        for (size_t i=1; i<layers.size(); i++) {
+            for (int node: layers[i]) {
                 process_node(node);
             }
         }
