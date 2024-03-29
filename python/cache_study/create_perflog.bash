@@ -9,8 +9,8 @@ executable="$1/stock_simulator"
 for iter in $(seq $iters); do
     echo "$iter/$iters"
 
-    output=$(perf stat -B -e cache-misses,cache-references $executable 1 2>&1)
-    echo "\"$output\"" >> "$1/stock.perflog"
+    output=$(perf stat -B -e cache-misses,cache-references,l2_rqsts.all_demand_miss,l2_rqsts.all_demand_references $executable 1 2>&1)
+    echo "\"$output\"" >> blob/stock.perflog
 done
 
 for n in 1 2 4 8 16 32 64 128 256 512 1024 2048 4096; do
@@ -21,7 +21,7 @@ for n in 1 2 4 8 16 32 64 128 256 512 1024 2048 4096; do
     for iter in $(seq $iters); do
         echo "$iter/$iters"
 
-        output=$(perf stat -B -e cache-misses,cache-references $executable 1 2>&1)
-        echo "\"$output\"" >> "$1/$n.perflog"
+        output=$(perf stat -B -e cache-misses,cache-references,l2_rqsts.all_demand_miss,l2_rqsts.all_demand_references $executable 1 2>&1)
+        echo "\"$output\"" >> blob/$n.perflog
     done
 done
