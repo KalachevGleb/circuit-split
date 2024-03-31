@@ -19,6 +19,7 @@ class Cache {
     std::list<CacheEntry> _ordered;
     int _capacity;
     int _allocated;
+    std::vector<int> _history;
     
 public:
     explicit Cache(int capacity) : _capacity(capacity), _allocated(0) {};
@@ -27,4 +28,8 @@ public:
     bool contains(int id);
     int antiscore(const std::vector<int>& ids);
     int weight(int id);
+
+    std::vector<int> history() {
+        return _history;
+    }
 };

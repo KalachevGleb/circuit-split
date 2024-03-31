@@ -12,7 +12,8 @@ PYBIND11_MODULE(cpp, m) {
         .def("push", &Cache::push)
         .def("contains", &Cache::contains)
         .def("antiscore", &Cache::antiscore)
-        .def("weight", &Cache::weight);
+        .def("weight", &Cache::weight)
+        .def("history", &Cache::history);
           
     py::class_<Layer>(m, "Layer")
         .def(py::init<const int&>())
@@ -22,5 +23,6 @@ PYBIND11_MODULE(cpp, m) {
         .def("set_score", &Layer::set_score)
         .def("init_cache", &Layer::init_cache)
         .def("start", &Layer::start)
-        .def("step", &Layer::step);
+        .def("step", &Layer::step)
+        .def("cache_history", &Layer::cache_history);
 }

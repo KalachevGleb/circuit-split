@@ -7,6 +7,8 @@
 using namespace std;
 
 vector<CacheEntry> Cache::push(int id, int weight) {
+    _history.push_back(id);
+
     vector<CacheEntry> ret;
 
     if (_map.contains(id)) {

@@ -145,6 +145,10 @@ public:
     void start();
 
     int step();
+    
+    std::vector<int> cache_history() {
+        return _cache -> history();
+    }
 
 private:
     std::set<LayerNode*> _mem;
