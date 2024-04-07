@@ -14,26 +14,15 @@ import matplotlib.pyplot as plt
 # Перестановка алгоритмов
 # Модули в схеме - группировка под кэши
 # ML
+# Симулировать точки синхронизации в жадном алгоритме в общем виде - не только один поток ждет набор других
+# Оптимизировать точки синхронизации после их генерации
+# Добавить проверку на порядок
 
-IN_SCRIPT = False
 FRIENDLY = True
-MODE = 3
-
-THREAD_COUNT = int(sys.argv[1])
-LOSS = float(sys.argv[2])
-LOSS2 = float(sys.argv[3])
-
-# TODO
-# Комментарии
-
-filename = 'blob/CONTAINER_SET_8_0_1.json' 
+MODE = 1
 
 def print_freindly(*args):
     if FRIENDLY:
-        print(*args)
-
-def print_in_script(*args):
-    if IN_SCRIPT:
         print(*args)
 
 def tqdm_friendly(args):
@@ -130,15 +119,12 @@ def reorder_graph(graph):
     return turn2vertex_id.tolist()           
     
 def main():
-    if len(sys.argv) != 4:
-        print_freindly('Ожидались желаемое число потоков, пареметры стоимости мьютекса[, и путь до выходного файла]')
-        quit(1)
-
     print_freindly('Чтение графа')
 
-    fd = open(filename, 'r')
-    graph_raw = json.load(fd)
-    fd.close()
+    with open(IN_PATH, 'r') as fd:
+        graph_raw = json.load(fd)
+        if 'graph' in graph_raw.keys():
+            graph_raw = graph_raw['graph']
 
     nc = len(graph_raw['node_weights'])
     ec = len(graph_raw['edges'])
@@ -153,9 +139,7 @@ def main():
 
     turn2vertex_id = graph.topological_sorting(mode='out')
 
-    if MODE == 1:
-        single_thread_time = np.sum(graph.vs['w'])
-    if MODE in [2, 3, 4]:
+    if MODE in list(range(1000)):
         single_thread_time = np.sum(np.array(graph.vs['w'], dtype=np.int64) * np.array([len(vertex.neighbors(mode='out')) for vertex in graph.vs], dtype=np.int64))
 
     print_freindly('Стоимость однопоточного вычисления:', single_thread_time)
@@ -165,24 +149,72 @@ def main():
     if MODE == 1:
         cost_greedy = cut_graph(graph=graph, turn2vertex_id=turn2vertex_id)
         memory_order = list(range(len(graph.vs)))
+    else:
+        print_freindly('Неизвестный MODE:', MODE)
+        quit(1)
 
+    print_freindly('Проверяю расписание')
+    if len(turn2vertex_id) != len(set(turn2vertex_id)):
+        print_freindly('В построенном расписании есть повторяющиеся вершины')
+        quit(2)
+    if np.amax(turn2vertex_id) != nc - 1 or np.amin(turn2vertex_id) != 0:
+        print_freindly('В построенном расписании есть номера вершин, которых нет в графе')
+        quit(2)
+    print_freindly('OK')
+    
     print_freindly('Стоимость:', cost_greedy)
     print_freindly('Overhead:', str(sum(cost_greedy) - np.sum(graph.vs['w'])))
     print_freindly('Выгода: ' + str(round(100 * (1 - max(cost_greedy) / single_thread_time), 3)) + '%')
 
     print_freindly('Делаю дамп разреза')
 
-    with open('cut.json', 'w') as fd:
+    schedule = [[] for _ in range(THREAD_COUNT)]
+    sync_points = []
+    for vertex_id in turn2vertex_id:
+        vertex = graph.vs[vertex_id]
+        curr_thread = int(vertex['p'])
+
+        A = [curr_thread]
+        parents = vertex.neighbors(mode='in')
+        B = sorted(list(set([int(parent['p']) for parent in parents if parent['p'] != curr_thread])))
+
+        if B != []: #Есть родители из соседних потоков
+            sync_points.append([A, B])
+
+            for thread in set(map(int, A + B)):
+                schedule[thread].append([1, len(sync_points) - 1])
+        
+        schedule[curr_thread].append([0, int(vertex_id)])
+
+
+    graph_raw['edges'] = [(e[1], e[0]) for e in graph_raw['edges']] 
+    with open(OUT_PATH, 'w') as fd:
+        print(OUT_PATH)
         json.dump({
             'graph' : graph_raw,
             'memory_order' : memory_order,
-            'schedule' : [[[0, vertex_id] for vertex_id in schedule]],
-            'sync_points' : []
-        }, fd)
+            'schedule' : schedule,
+            'sync_points' : sync_points
+        }, fd, indent=4)
 
-    print_freindly('Передач между потоками:', cross_thread_copies)
+    print_freindly('Синхронизаций:', len(sync_points))
 
     print_freindly('Готово! Have a nice day :)')
 
 if __name__ == '__main__':
+    if len(sys.argv) not in [4, 5, 6]:
+        print_freindly('Ожидались желаемое число потоков, пареметры стоимости мьютекса[, и путь до выходного файла]')
+        quit(1)
+
+
+    THREAD_COUNT = int(sys.argv[1])
+    LOSS = float(sys.argv[2])
+    LOSS2 = float(sys.argv[3])
+    IN_PATH = '50k.json'
+    OUT_PATH = 'cut.json'
+    if len(sys.argv) >= 5:
+        IN_PATH = sys.argv[4]
+    if len(sys.argv) >= 6:
+        OUT_PATH = sys.argv[5]
+
     main()
