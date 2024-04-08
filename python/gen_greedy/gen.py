@@ -19,14 +19,16 @@ import matplotlib.pyplot as plt
 # Добавить проверку на порядок
 
 FRIENDLY = True
-MODE = 1
+TQDM_FRIENDLY = False
+MODE = 2
+MODE2_ITER = 1000
 
 def print_freindly(*args):
     if FRIENDLY:
         print(*args)
 
 def tqdm_friendly(args):
-    if FRIENDLY:
+    if TQDM_FRIENDLY:
         return tqdm(args)
     else:
         return args
@@ -71,10 +73,11 @@ def reorder_graph(graph):
     t2v_id_set = set(turn2vertex_id)
 
     mem = [deque() for _ in range(THREAD_COUNT)]
-    for vertex_id in turn2vertex_id.copy():
+    mem_set = set()
+    for vertex_id in turn2vertex_id:
         vertex = graph.vs[vertex_id]
 
-        for child in vertex.neighobors(mode='out'):
+        for child in vertex.neighbors(mode='out'):
             good = True
 
             for parent in child.neighbors(mode='in'):
@@ -82,11 +85,12 @@ def reorder_graph(graph):
                     good = False
                     break
 
-            if good:
-                mem[child['t']].append(child.index)
+            if good and child.index not in mem_set:
+                mem[child['p']].append(child.index)
+                mem_set.add(child.index)
 
     curr_thread = 0
-    pbar = tqdm(total=len(turn2vertex_id))
+    #pbar = tqdm(total=len(turn2vertex_id))
     while len(turn2vertex_id) != len(graph.vs):
         if len(mem[curr_thread]) == 0:
             curr_thread += 1
@@ -94,6 +98,7 @@ def reorder_graph(graph):
             continue
 
         vertex_id = mem[curr_thread].popleft()
+        mem_set.remove(vertex_id)
         vertex = graph.vs[vertex_id]
 
         turn2vertex_id.append(vertex_id)
@@ -107,16 +112,17 @@ def reorder_graph(graph):
                     good = False
                     break
 
-            if good:
-                mem[child['t']].append(child.index)
+            if good and child.index not in mem_set:
+                mem[child['p']].append(child.index)
+                mem_set.add(child.index)
 
         curr_thread += 1
         curr_thread %= THREAD_COUNT
         
-        pbar.update(1)
-    pbar.close()
+        #pbar.update(1)
+    #pbar.close()
 
-    return turn2vertex_id.tolist()           
+    return turn2vertex_id     
     
 def main():
     print_freindly('Чтение графа')
@@ -149,6 +155,18 @@ def main():
     if MODE == 1:
         cost_greedy = cut_graph(graph=graph, turn2vertex_id=turn2vertex_id)
         memory_order = list(range(len(graph.vs)))
+    if MODE == 2:
+        old_t2v_id = []
+        for i in tqdm_friendly(range(MODE2_ITER)):
+            cost_greedy = cut_graph(graph=graph, turn2vertex_id=turn2vertex_id)
+            print(np.amax(cost_greedy))
+            turn2vertex_id = reorder_graph(graph=graph)
+            h = hash(str(turn2vertex_id))
+            if h in old_t2v_id:
+                break
+            old_t2v_id.append(h)
+        memory_order = list(range(len(graph.vs)))
+
     else:
         print_freindly('Неизвестный MODE:', MODE)
         quit(1)
