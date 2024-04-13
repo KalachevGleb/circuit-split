@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 # Добавить проверку на порядок
 
 FRIENDLY = True
-TQDM_FRIENDLY = False
+TQDM_FRIENDLY = True
 MODE = 1
 MODE2_ITER = 1000
 
@@ -155,7 +155,7 @@ def main():
     if MODE == 1:
         cost_greedy = cut_graph(graph=graph, turn2vertex_id=turn2vertex_id)
         memory_order = list(range(len(graph.vs)))
-    if MODE == 2:
+    elif MODE == 2:
         old_t2v_id = []
         for i in tqdm_friendly(range(MODE2_ITER)):
             cost_greedy = cut_graph(graph=graph, turn2vertex_id=turn2vertex_id)
@@ -166,7 +166,6 @@ def main():
                 break
             old_t2v_id.append(h)
         memory_order = list(range(len(graph.vs)))
-
     else:
         print_freindly('Неизвестный MODE:', MODE)
         quit(1)
