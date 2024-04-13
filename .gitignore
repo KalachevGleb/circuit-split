@@ -176,3 +176,4 @@ python/gen_greedy/*.zip
 python/gen_greedy/*.csv
 python/gen_greedy/*.json
 python/gen_greedy/*.txt
+python/gen_greedy/test.bash
