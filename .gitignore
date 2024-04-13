@@ -174,3 +174,5 @@ python/gen_greedy/blob/
 python/gen_greedy/*/
 python/gen_greedy/*.zip
 python/gen_greedy/*.csv
+python/gen_greedy/*.json
+python/gen_greedy/*.txt
