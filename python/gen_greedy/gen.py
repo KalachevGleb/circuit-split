@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 
 FRIENDLY = True
 TQDM_FRIENDLY = False
-MODE = 2
+MODE = 1
 MODE2_ITER = 1000
 
 def print_freindly(*args):
