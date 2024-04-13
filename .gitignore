@@ -171,3 +171,6 @@ python/cache_study/dep_graph-600K-new.json
 python/cache_study/dep_graph.json
 python/cache_study/compilated/
 python/gen_greedy/blob/
+python/gen_greedy/*/
+python/gen_greedy/*.zip
+python/gen_greedy/*.csv
