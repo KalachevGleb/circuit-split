@@ -175,9 +175,9 @@ experiments/mem/work
 python/gen_greedy/cut.json
 python/gen_greedy/dep_graph.json
 experiments/mem/dataset.csv
-python/gen_greedy/*/
-python/gen_greedy/*.zip
-python/gen_greedy/*.csv
-python/gen_greedy/*.json
-python/gen_greedy/*.txt
-python/gen_greedy/test.bash
+python/gen_schedule/*/
+python/gen_schedule/*.zip
+python/gen_schedule/*.csv
+python/gen_schedule/*.json
+python/gen_schedule/*.txt
+python/gen_schedule/test.bash
