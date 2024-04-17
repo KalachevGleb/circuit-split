@@ -110,41 +110,21 @@ def cut_graph_depth(graph):
         previously_used_vertices.update(new_layer)
         ready_size += len(new_layer)
 
-    p = 0
-    for vertex_id in layers[0]:
-        graph.vs[vertex_id]['p'] = p
-        p += 1
-        p %= THREAD_COUNT
+    layers = [sorted(list(layer)) for layer in layers]
 
-    cost = 0
-    heaviness = np.zeros((THREAD_COUNT,), dtype=np.float32)
+    for vertex_id in layers[0]:
+        graph.vs[vertex_id]['p'] = 0
+
     pbar = tqdm(total=len(graph.vs))
     for layer in layers[1:]:
-        time_per_thread = np.zeros((THREAD_COUNT,), dtype=np.float32)
-
-        for vertex_id in layer:
-            times = np.zeros((THREAD_COUNT,), dtype=np.float32)
-
-            for thread in range(THREAD_COUNT):
-                for parent in graph.vs[vertex_id].neighbors(mode='in'):
-                    if parent['p'] != thread:
-                        times[thread] += parent['w'] * LOSS1 + LOSS2
-                    else:
-                        times[thread] += parent['w']
-        
-            possible_tpt = time_per_thread + times
-            thread = np.argmin(possible_tpt)
-
-            graph.vs[vertex_id]['p'] = thread
-            time_per_thread[thread] += times[thread]
-        
-        cost += np.amax(time_per_thread)
-        heaviness += time_per_thread
+        for i in range(len(layer)):
+            vertex_id = layer[i]
+            graph.vs[vertex_id]['p'] = int(i / len(layer) * THREAD_COUNT)
 
         pbar.update(len(layer))
     pbar.close()
 
-    return layers, cost, heaviness
+    return layers
 
 def reorder_graph(graph): 
     turn2vertex_id = [vertex.index for vertex in graph.vs if vertex['w'] == 0]
@@ -237,6 +217,7 @@ def main():
 
     if MODE == 1:
         heaviness = cut_graph_greedy(graph=graph, turn2vertex_id=turn2vertex_id)
+
         memory_order = list(range(len(graph.vs)))
 
         cost = np.amax(heaviness)
@@ -255,10 +236,9 @@ def main():
 
         cost = np.amax(heaviness)
     elif MODE == 3:
-        layers, cost, heaviness = cut_graph_depth(graph=graph)
-        memory_order = list(range(len(graph.vs)))
+        layers = cut_graph_depth(graph=graph)
 
-        print('Стоимость без учета барьеров:', cost)
+        memory_order = sum(layers, [])
     else:
         print_freindly('Неизвестный MODE:', MODE)
         quit(1)
@@ -291,9 +271,15 @@ def main():
     #
     #
     
-    print_freindly('Стоимость:', heaviness)
-    print_freindly('Overhead:', str(sum(heaviness) - single_thread_time))
-    print_freindly('Выгода: ' + str(round(100 * (single_thread_time - cost) / single_thread_time, 3)) + '%')
+    if MODE in [1, 2]:
+        print_freindly('Стоимость:', heaviness)
+        print_freindly('Overhead:', str(sum(heaviness) - single_thread_time))
+        print_freindly('Выгода: ' + str(round(100 * (single_thread_time - cost) / single_thread_time, 3)) + '%')
+    elif MODE == 3:
+        print_freindly('Не реализована статистика для MODE == 3')
+    else:
+        print_freindly('Неизвестный MODE:', MODE)
+        quit(1)
 
     #
     #
