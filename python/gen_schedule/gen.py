@@ -115,16 +115,24 @@ def cut_graph_depth(graph):
     for vertex_id in layers[0]:
         graph.vs[vertex_id]['p'] = 0
 
+    heavinesses = []
     pbar = tqdm(total=len(graph.vs))
     for layer in layers[1:]:
+        heavinesses.append(np.zeros(shape=(THREAD_COUNT,)))
+
         for i in range(len(layer)):
             vertex_id = layer[i]
-            graph.vs[vertex_id]['p'] = int(i / len(layer) * THREAD_COUNT)
+            vertex = graph.vs[vertex_id]
+
+            thread = int(i / len(layer) * THREAD_COUNT)
+            graph.vs[vertex_id]['p'] = thread
+
+            heavinesses[-1][thread] += sum(parent['w'] for parent in vertex.neighbors(mode='in'))
 
         pbar.update(len(layer))
     pbar.close()
 
-    return layers
+    return layers, heavinesses
 
 def reorder_graph(graph): 
     turn2vertex_id = [vertex.index for vertex in graph.vs if vertex['w'] == 0]
@@ -236,7 +244,7 @@ def main():
 
         cost = np.amax(heaviness)
     elif MODE == 3:
-        layers = cut_graph_depth(graph=graph)
+        layers, heavinesses = cut_graph_depth(graph=graph)
 
         memory_order = sum(layers, [])
     else:
@@ -276,7 +284,13 @@ def main():
         print_freindly('Overhead:', str(sum(heaviness) - single_thread_time))
         print_freindly('Выгода: ' + str(round(100 * (single_thread_time - cost) / single_thread_time, 3)) + '%')
     elif MODE == 3:
-        print_freindly('Не реализована статистика для MODE == 3')
+        print_freindly('Барьеров:', len(layers))
+        print_freindly('Утилизация потоков:',
+                       str(round(float(
+                             np.sum([np.sum(h) for h in heavinesses]) /
+                             np.sum([np.amax(h) * THREAD_COUNT for h in heavinesses]) *
+                             100
+                       ), 3)) + '%')
     else:
         print_freindly('Неизвестный MODE:', MODE)
         quit(1)
