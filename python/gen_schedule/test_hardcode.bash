@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#!/bin/bash
-
 echo 
 python gen.py 1 -1 -1 graphs/600k.json cut.json
 simulation cut.json blob/work/ --compiler /usr/bin/g++ --run --time 10
@@ -10,4 +8,16 @@ echo
 python gen.py 4 1 0 graphs/600k.json cut.json
 simulation cut.json blob/work/ --compiler /usr/bin/g++ --run --time 10
 cp blob/work/generated_code/bin/simulator ./bin/600k_4_1_0
+echo 
+python gen.py 8 1 0 graphs/600k.json cut.json
+simulation cut.json blob/work/ --compiler /usr/bin/g++ --run --time 10
+cp blob/work/generated_code/bin/simulator ./bin/600k_8_1_0
+echo 
+python gen.py 12 1 0 graphs/600k.json cut.json
+simulation cut.json blob/work/ --compiler /usr/bin/g++ --run --time 10
+cp blob/work/generated_code/bin/simulator ./bin/600k_12_1_0
+echo 
+python gen.py 16 1 0 graphs/600k.json cut.json
+simulation cut.json blob/work/ --compiler /usr/bin/g++ --run --time 10
+cp blob/work/generated_code/bin/simulator ./bin/600k_16_1_0
 echo
