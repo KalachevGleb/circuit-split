@@ -1,5 +1,8 @@
 #!/bin/bash
 
+rm -rf blob
+mkdir -p bin
+
 echo 
 python gen.py 1 -1 -1 graphs/600k.json cut.json
 simulation cut.json blob/work/ --compiler /usr/bin/g++ --run --time 10
