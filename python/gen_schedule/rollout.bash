@@ -20,6 +20,6 @@ for scheme in rollout_graphs/*; do
         echo "$name, $threads, $single_thread_cost, $barriers, $util"  >> rollout.csv
         
         rm -rf blob
-        simulation cut.json blob/work/ --compiler /usr/bin/clang++ --run --time 10 > "rollouts/${name}_${threads}.txt"
+        simulation cut.json blob/work/ --compiler /usr/bin/g++ --run --time 10 > "rollouts/${name}_${threads}.txt"
     done
 done
