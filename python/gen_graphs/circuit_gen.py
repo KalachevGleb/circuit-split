@@ -155,7 +155,6 @@ def main():
     # generate simple circuits
     gen_simple_circuits([2**i for i in range(10, 16)], 20, [1, 2, 4, 8, 16])
     #gen_simple_circuits([2 ** i for i in range(16, 21)], 2, [1, 2, 4, 8, 16])
-    return 0
 
     for logn in range(1, 15):
         graph = BitonicSortGraph(logn)
@@ -163,6 +162,8 @@ def main():
             json.dump(graph.graph(), f)
         with open(f'output/bitonic_sort_{logn}_one_thread.json', 'w') as f:
             json.dump(graph.one_thread_schedule(), f)
+
+    return 0
 
 
 if __name__ == '__main__':
