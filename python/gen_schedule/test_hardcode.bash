@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ts=$(date +”%A, %b %d, %Y %H:%M:%S”	)
+ts=$( date +"%A, %b %d, %Y %H:%M:%S" )
 bin_dir="bin/$ts"
 
 rm -rf blob
