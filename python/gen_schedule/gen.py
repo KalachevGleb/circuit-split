@@ -1,6 +1,6 @@
 import json
-import sys
 from collections import deque
+import argparse
 
 import igraph as ig
 import numpy as np
@@ -116,15 +116,55 @@ def cut_graph_depth(graph):
         graph.vs[vertex_id]['p'] = 0
 
     heavinesses = []
+    cross_thread = []
+    in_thread = []
     pbar = tqdm(total=len(graph.vs))
     for layer in layers[1:]:
         heavinesses.append(np.zeros(shape=(THREAD_COUNT,)))
+        cross_thread.append(np.zeros(shape=(THREAD_COUNT,)))
+        in_thread.append(np.zeros(shape=(THREAD_COUNT,)))
 
+        if SHUFFLE_DEPTH:
+            np.random.shuffle(layer)
+
+        layer_complexity = 0
+        if DEPTH_LAYER_DUMMY_VERTEX_CHOICE == 'dummy':
+            layer_complexity += len(layer)
+        elif DEPTH_LAYER_DUMMY_VERTEX_CHOICE == 'backpack':
+            for vertex_id in layer:
+                for parent in graph.vs[vertex_id].neighbors(mode='in'):
+                    layer_complexity += parent['w']
+        elif DEPTH_LAYER_DUMMY_VERTEX_CHOICE == 'smart_backpack':
+            print_freindly('Не реализовано')
+            quit(1)
+        else:
+            print_freindly('Плохой inside_layer_schedule:', DEPTH_LAYER_DUMMY_VERTEX_CHOICE)
+            quit(1)
+
+        cumsum = 0
         for i in range(len(layer)):
             vertex_id = layer[i]
             vertex = graph.vs[vertex_id]
 
-            thread = int(i / len(layer) * THREAD_COUNT)
+            thread = int(cumsum / max(layer_complexity, 1) * THREAD_COUNT)
+
+            if DEPTH_LAYER_DUMMY_VERTEX_CHOICE == 'dummy':
+                cumsum += 1 
+            elif DEPTH_LAYER_DUMMY_VERTEX_CHOICE == 'backpack':
+                cumsum += np.sum([parent['w'] for parent in vertex.neighbors(mode='in')])
+            elif DEPTH_LAYER_DUMMY_VERTEX_CHOICE == 'smart_backpack':
+                print_freindly('Не реализовано')
+                quit(1)
+            else:
+                print_freindly('Плохой inside_layer_schedule:', DEPTH_LAYER_DUMMY_VERTEX_CHOICE)
+                quit(1)
+
+            for parent in vertex.neighbors(mode='in'):
+                if parent['p'] == thread:
+                    in_thread[-1][thread] += parent['w']
+                else:
+                    cross_thread[-1][thread] += parent['w']
+
             graph.vs[vertex_id]['p'] = thread
 
             heavinesses[-1][thread] += sum(parent['w'] for parent in vertex.neighbors(mode='in'))
@@ -133,6 +173,30 @@ def cut_graph_depth(graph):
     pbar.close()
 
     return layers, heavinesses
+
+# def get_tree(graph, root_id):
+#     root = graph.vs[root_id]
+    
+#     ret = set([root_id])
+#     children = set()
+#     for child in root.neighbors(mode='out'):
+#         child_id = child.index
+
+#         if child_id in children:
+#             continue
+
+#         ret.update(get_tree(graph=graph, root_id=child_id))
+#         children.add(child_id)
+
+#     return ret
+
+# def cut_graph_recursive(graph, turn2vertex_id):
+#     if len(turn2vertex_id) < 1000:
+#         cut_graph_greedy(turn2vertex_id)
+#     else:
+#         root_id = np.random.choice(turn2vertex_id)
+
+#         vertices = get_tree(graph, root_id)
 
 def reorder_graph(graph): 
     turn2vertex_id = [vertex.index for vertex in graph.vs if vertex['w'] == 0]
@@ -369,21 +433,30 @@ def main():
     print_freindly('Готово! Have a nice day :)')
 
 if __name__ == '__main__':#
-    if len(sys.argv) not in [4, 5, 6]:
-        print_freindly('Ожидались желаемое число потоков, пареметры стоимости мьютекса[, и путь до выходного файла]')
-        quit(1)
+    parser = argparse.ArgumentParser(description='Videos to images')
+    parser.add_argument('threads', type=int, help='Число потоков в расписании')
+    parser.add_argument('LOSS1', type=float, help='LOSS1')
+    parser.add_argument('LOSS2', type=float, help='LOSS2')
+    parser.add_argument('in_file', type=str, help='Входной граф')
+    parser.add_argument('out_file', type=str, help='Выходное расписание')
+    parser.add_argument('--shuffle_layers', action='store_false', help='Перемешивать вершины в слоях послойного расписания')
+    parser.add_argument('--inside_layer_schedule', type=str,
+                        choices=['dummy', 'backpack', 'smart_backpack'],
+                        default='backpack',
+                        help='Режим распределения вершин в слое послойного расписания')
+    parser.add_argument('--mode', default=3, type=int, help='Выбор алгоритма построения расписания')
+    args = parser.parse_args()
 
-    THREAD_COUNT = int(sys.argv[1])
-    LOSS1 = float(sys.argv[2])
-    LOSS2 = float(sys.argv[3])
-    IN_PATH = '50k.json'
-    OUT_PATH = 'cut.json'
-    if len(sys.argv) >= 5:
-        IN_PATH = sys.argv[4]
-    if len(sys.argv) >= 6:
-        OUT_PATH = sys.argv[5]
-
+    THREAD_COUNT = args.threads
+    LOSS1 = args.LOSS1
+    LOSS2 = args.LOSS2
+    IN_PATH = args.in_file
+    OUT_PATH = args.out_file
+    MODE = args.mode
     if THREAD_COUNT == 1:
+        print_freindly('Для однопоточного расписания алгоритм автоматичсеки переключен на жадный')
         MODE = 1
+    SHUFFLE_DEPTH = args.shuffle_layers
+    DEPTH_LAYER_DUMMY_VERTEX_CHOICE = args.inside_layer_schedule
 
     main()
