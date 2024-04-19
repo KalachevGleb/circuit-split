@@ -3,7 +3,7 @@
 mkdir -p rollouts
 
 for scheme in rollout_graphs/*; do
-    for threads in 2 3 4 5 6 7 8; do
+    for threads in 2 3 4; do
         name=$(basename ${scheme} .json)
 
         if test -f "rollouts/${name}_${threads}.txt"; then
