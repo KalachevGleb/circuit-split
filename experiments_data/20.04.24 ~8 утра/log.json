@@ -1,0 +1,74 @@
+{
+  "nsteps": 23328,
+  "total_time": 30.0003,
+  "steps_per_second": 777.592,
+  "time_per_step": 0.00128602,
+  "ns_per_node": 2.06462,
+  "ns_per_read": 0.476498,
+  "ns_per_read_ideal": 0.193778,
+  "overhead": 2.45899
+}
+{
+  "nsteps": 37535,
+  "total_time": 30.0003,
+  "steps_per_second": 1251.15,
+  "time_per_step": 0.000799263,
+  "ns_per_node": 1.28316,
+  "ns_per_read": 0.296144
+}
+{
+  "nsteps": 43950,
+  "total_time": 30.0005,
+  "steps_per_second": 1464.98,
+  "time_per_step": 0.000682605,
+  "ns_per_node": 1.09587,
+  "ns_per_read": 0.25292
+}
+{
+  "nsteps": 37943,
+  "total_time": 30.0003,
+  "steps_per_second": 1264.75,
+  "time_per_step": 0.000790668,
+  "ns_per_node": 1.26936,
+  "ns_per_read": 0.29296
+}
+{
+  "nsteps": 44130,
+  "total_time": 30.0005,
+  "steps_per_second": 1470.98,
+  "time_per_step": 0.00067982,
+  "ns_per_node": 1.0914,
+  "ns_per_read": 0.251888
+}
+{
+  "nsteps": 30784,
+  "total_time": 30.0008,
+  "steps_per_second": 1026.1,
+  "time_per_step": 0.00097456,
+  "ns_per_node": 1.56459,
+  "ns_per_read": 0.361095
+}
+{
+  "nsteps": 37133,
+  "total_time": 30.0003,
+  "steps_per_second": 1237.75,
+  "time_per_step": 0.000807915,
+  "ns_per_node": 1.29705,
+  "ns_per_read": 0.29935
+}
+{
+  "nsteps": 32719,
+  "total_time": 30.0006,
+  "steps_per_second": 1090.61,
+  "time_per_step": 0.000916916,
+  "ns_per_node": 1.47205,
+  "ns_per_read": 0.339737
+}
+{
+  "nsteps": 36999,
+  "total_time": 30.0007,
+  "steps_per_second": 1233.27,
+  "time_per_step": 0.000810852,
+  "ns_per_node": 1.30177,
+  "ns_per_read": 0.300438
+}
