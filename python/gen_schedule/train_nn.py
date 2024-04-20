@@ -1,4 +1,10 @@
 import os
+import shutil
+import sys
+import json
+import argparse
+import time
+import secrets
 
 import numpy as np
 
@@ -14,11 +20,19 @@ from matplotlib import pyplot as plt
 
 import pandas as pd
 
-SIGMA = 0.001
-LR = 0.00001
-BATCH_SIZE = 32
-EPOCHS = 10000
-DROPOUT_RATE = 0.7
+parser = argparse.ArgumentParser(description='Videos to images')
+parser.add_argument('--sigma', type=float, default=0.001)
+parser.add_argument('--lr', type=float, default=0.00001)
+parser.add_argument('--batch_size', type=float, default=32)
+parser.add_argument('--epochs', type=int, default=10000)
+parser.add_argument('--dropout_rate', type=float, default=0.7)
+args = parser.parse_args()
+
+SIGMA = args.sigma
+LR = args.lr
+BATCH_SIZE = args.batch_size
+EPOCHS = args.epochs
+DROPOUT_RATE = args.dropout_rate
 
 data = pd.read_csv('dataset.csv').to_numpy()
 data = data[data[:, -2] < 1]
@@ -39,11 +53,7 @@ X_test = scaler.transform(X_test)
 
 model = keras.Sequential(
     [
-        layers.Dense(data_dim, activation="linear", name="layer1", kernel_initializer=initializers.RandomNormal(stddev=SIGMA)),
-        layers.BatchNormalization(),
-        layers.Activation(activation='relu'),
-        layers.Dropout(rate=DROPOUT_RATE),
-        layers.Dense(data_dim // 3, activation="linear", name="layer2", kernel_initializer=initializers.RandomNormal(stddev=SIGMA)),
+        layers.Dense(data_dim // 3, activation="linear", name="layer1", kernel_initializer=initializers.RandomNormal(stddev=SIGMA)),
         layers.BatchNormalization(),
         layers.Activation(activation='relu'),
         layers.Dropout(rate=DROPOUT_RATE),
@@ -70,17 +80,32 @@ y_pred = model.predict(X_test)
 print('MAE:', round(mean_absolute_error(y_test, y_pred), 3))
 print('MSE:', round(mean_squared_error(y_test, y_pred), 3))
 print('std:', round(np.std(y_test - y_pred), 3))
-print('Средняя ошибка:', str(round(np.mean(np.abs(y_pred / y_test - 1) * 100), 3)) + '%')
+mean_percentage_error = np.mean(np.abs(y_pred / y_test - 1) * 100)
+print('Средняя ошибка:', str(round(mean_percentage_error, 3)) + '%')
+
+token = secrets.token_hex(nbytes=4)
 
 if not os.path.exists('plots'):
     os.mkdir('plots')
 plot_num = len(os.listdir('plots')) + 1
 
-plt.plot(history.history['loss'])
-plt.plot(history.history['val_loss'])
+plt.plot(history.history['mean_absolute_error'])
+plt.plot(history.history['val_mean_absolute_error'])
 plt.title('model loss')
 plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'val'], loc='upper left')
-plt.savefig(os.path.join('plots', str(plot_num) + '.png'))
+plt.savefig(os.path.join('plots', str(plot_num) + '_' + token + '.png'))
 
+if not os.path.exists('nns'):
+    os.mkdir('nns')
+shutil.copy(sys.argv[0], os.path.join('nns', str(plot_num) + '_' + token + '_MPE=' + str(round(mean_percentage_error, 3)) + '.py'))
+hyperparameters = {'SIGMA' : SIGMA,
+                   'LR' : LR,
+                   'BATCH_SIZE' : BATCH_SIZE,
+                   'EPOCHS' : EPOCHS,
+                   'DROPOUT_RATE' : DROPOUT_RATE,
+                   'time' : time.time()
+                  }
+with open(os.path.join('nns', str(plot_num) + '_' + token + '.json'), 'w') as fd:
+    json.dump(hyperparameters, fd)
