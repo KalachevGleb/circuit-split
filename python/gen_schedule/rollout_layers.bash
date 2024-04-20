@@ -1,6 +1,5 @@
 #!/bin/bash
 
-mkdir -p rollouts
 rm -rf rollout.csv
 
 threads=2
