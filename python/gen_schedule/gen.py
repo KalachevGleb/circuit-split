@@ -1,6 +1,7 @@
 import json
 from collections import deque
 import argparse
+import os
 
 import igraph as ig
 import numpy as np
@@ -17,15 +18,6 @@ import matplotlib.pyplot as plt
 # Симулировать точки синхронизации в жадном алгоритме в общем виде - не только один поток ждет набор других
 # Оптимизировать точки синхронизации после их генерации
 # Добавить проверку на порядок
-
-FRIENDLY = True
-TQDM_FRIENDLY = True
-MODE = 3
-MODE2_ITER = 1000
-
-THREAD_COUNT = None
-LOSS1 = None
-LOSS2 = None
 
 def print_freindly(*args):
     if FRIENDLY:
@@ -112,17 +104,20 @@ def cut_graph_depth(graph):
 
     layers = [sorted(list(layer)) for layer in layers]
 
-    for vertex_id in layers[0]:
-        graph.vs[vertex_id]['p'] = 0
+    for i in range(len(layers[0])):
+        vertex_id = layers[0][i]
+        graph.vs[vertex_id]['p'] = int(i / len(layers[0]) * THREAD_COUNT)
 
     heavinesses = []
-    cross_thread = []
-    in_thread = []
+    cross_thread_read = []
+    in_thread_read = []
+    in_thread_write = []
     pbar = tqdm(total=len(graph.vs))
     for layer in layers[1:]:
         heavinesses.append(np.zeros(shape=(THREAD_COUNT,)))
-        cross_thread.append(np.zeros(shape=(THREAD_COUNT,)))
-        in_thread.append(np.zeros(shape=(THREAD_COUNT,)))
+        cross_thread_read.append(np.zeros(shape=(THREAD_COUNT,)))
+        in_thread_read.append(np.zeros(shape=(THREAD_COUNT,)))
+        in_thread_write.append(np.zeros(shape=(THREAD_COUNT,)))
 
         if SHUFFLE_DEPTH:
             np.random.shuffle(layer)
@@ -161,9 +156,10 @@ def cut_graph_depth(graph):
 
             for parent in vertex.neighbors(mode='in'):
                 if parent['p'] == thread:
-                    in_thread[-1][thread] += parent['w']
+                    in_thread_read[-1][thread] += parent['w']
                 else:
-                    cross_thread[-1][thread] += parent['w']
+                    cross_thread_read[-1][thread] += parent['w']  
+                in_thread_write[-1][thread] += parent['w']
 
             graph.vs[vertex_id]['p'] = thread
 
@@ -172,7 +168,7 @@ def cut_graph_depth(graph):
         pbar.update(len(layer))
     pbar.close()
 
-    return layers, heavinesses
+    return layers, heavinesses, in_thread_read, cross_thread_read, in_thread_write
 
 # def get_tree(graph, root_id):
 #     root = graph.vs[root_id]
@@ -308,7 +304,36 @@ def main():
 
         cost = np.amax(heaviness)
     elif MODE == 3:
-        layers, heavinesses = cut_graph_depth(graph=graph)
+        layers, _, _, _, _ = cut_graph_depth(graph=graph)
+
+        if __KILL_LAYERS:
+            print_freindly('__KILL_LAYERS == True')
+
+            for layer_num in tqdm_friendly(range(__EXTRACTED_LAYER_START, __EXTRACTED_LAYER_STOP)):
+                vertices = sum(layers[layer_num:layer_num+__SURVIVE_DEPTH], [])
+                subgraph = graph.subgraph(vertices)
+                
+                if not os.path.exists('cutted_graphs'):
+                    os.mkdir('cutted_graphs')
+
+                with open(
+                    os.path.join('cutted_graphs',
+                                 os.path.basename(IN_PATH).split('.')[0] + '_' + str(layer_num) + '_' + str(__SURVIVE_DEPTH) + '.json'),
+                    'w') as fd:
+
+                    json.dump({
+                            'node_weights' : list(subgraph.vs['w']),
+                            'edges' : list([(e.target, e.source) for e in subgraph.es]), #### Внимание на порядок вершин!
+                            'reg_edges' : [],
+                            'nodes_parents' : [],
+                            'modules_parents' : []
+                        }, fd, indent=4)
+                
+            print_freindly('Done!')
+
+            quit(0)
+        else:
+            layers, heavinesses, in_thread_read, cross_thread_read, in_thread_write = cut_graph_depth(graph=graph)
 
         memory_order = sum(layers, [])
     else:
@@ -355,6 +380,9 @@ def main():
                              np.sum([np.amax(h) * THREAD_COUNT for h in heavinesses]) *
                              100
                        ), 3)) + '%')
+        print_freindly('Суммарно чтений внутри одного потока:', np.sum(in_thread_read, axis=0).tolist())
+        print_freindly('Суммарно чтений между потоками:', np.sum(cross_thread_read, axis=0).tolist())
+        print_freindly('Суммарно записей:', np.sum(in_thread_write, axis=0).tolist())
     else:
         print_freindly('Неизвестный MODE:', MODE)
         quit(1)
@@ -414,7 +442,6 @@ def main():
 
     graph_raw['edges'] = [(e[1], e[0]) for e in graph_raw['edges']] 
     with open(OUT_PATH, 'w') as fd:
-        print(OUT_PATH)
         json.dump({
             'graph' : graph_raw,
             'memory_order' : memory_order,
@@ -432,31 +459,69 @@ def main():
 
     print_freindly('Готово! Have a nice day :)')
 
-if __name__ == '__main__':#
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Videos to images')
     parser.add_argument('threads', type=int, help='Число потоков в расписании')
     parser.add_argument('LOSS1', type=float, help='LOSS1')
     parser.add_argument('LOSS2', type=float, help='LOSS2')
     parser.add_argument('in_file', type=str, help='Входной граф')
     parser.add_argument('out_file', type=str, help='Выходное расписание')
-    parser.add_argument('--shuffle_layers', action='store_false', help='Перемешивать вершины в слоях послойного расписания')
-    parser.add_argument('--inside_layer_schedule', type=str,
+    parser.add_argument('--shuffle_layers',
+                        type=bool,
+                        default=False,
+                        help='Перемешивать вершины в слоях послойного расписания')
+    parser.add_argument('--inside_layer_schedule',
+                        type=str,
                         choices=['dummy', 'backpack', 'smart_backpack'],
                         default='backpack',
                         help='Режим распределения вершин в слое послойного расписания')
-    parser.add_argument('--mode', default=3, type=int, help='Выбор алгоритма построения расписания')
+    parser.add_argument('--mode',
+                        type=int,
+                        choices=[1, 2, 3],
+                        default=3,
+                        help='Выбор алгоритма построения расписания')
+    parser.add_argument('--survive_depth',
+                        type=int,
+                        choices=[2, 3, 4, 5],
+                        default=2,
+                        help='Число вырезаемых слоев')
+    parser.add_argument('--kill_layers',
+                        type=bool,
+                        default=False,
+                        help='[Отладка] убрать из графа в послойном расписании все слои кроме двух')
+    parser.add_argument('--extracted_layer_start',
+                        type=int,
+                        default=3,
+                        help='[Отладка] извлекаемые из графа слои, начало диапазона (номер первого слоя подграфа)')
+    parser.add_argument('--extracted_layer_stop',
+                        type=int,
+                        default=4,
+                        help='[Отладка] извлекаеыме из графа слои, конец диапазона (номер первого слоя подграфа)')
     args = parser.parse_args()
 
+    # Основное
     THREAD_COUNT = args.threads
     LOSS1 = args.LOSS1
     LOSS2 = args.LOSS2
     IN_PATH = args.in_file
     OUT_PATH = args.out_file
     MODE = args.mode
-    if THREAD_COUNT == 1:
-        print_freindly('Для однопоточного расписания алгоритм автоматичсеки переключен на жадный')
-        MODE = 1
     SHUFFLE_DEPTH = args.shuffle_layers
     DEPTH_LAYER_DUMMY_VERTEX_CHOICE = args.inside_layer_schedule
+
+    # Сообщения
+    FRIENDLY = True
+    TQDM_FRIENDLY = True
+
+    # Свойства режима 2
+    MODE2_ITER = 1000
+
+    # Свойства режима 3
+    __KILL_LAYERS = args.kill_layers
+    __SURVIVE_DEPTH = args.survive_depth
+    __EXTRACTED_LAYER_START = args.extracted_layer_start
+    __EXTRACTED_LAYER_STOP = args.extracted_layer_stop
+
+    print(__KILL_LAYERS)
 
     main()
