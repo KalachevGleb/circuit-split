@@ -180,3 +180,4 @@ python/gen_schedule/*.zip
 python/gen_schedule/*.csv
 python/gen_schedule/*.json
 python/gen_schedule/*.txt
+python/gen_schedule/*.png
