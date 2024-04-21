@@ -486,7 +486,6 @@ if __name__ == '__main__':
                         help='Выбор алгоритма построения расписания')
     parser.add_argument('--survive_depth',
                         type=int,
-                        choices=[2, 3, 4, 5],
                         default=2,
                         help='Число вырезаемых слоев')
     parser.add_argument('--kill_layers',
