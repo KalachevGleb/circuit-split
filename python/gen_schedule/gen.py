@@ -309,7 +309,11 @@ def main():
         if __KILL_LAYERS:
             print_freindly('__KILL_LAYERS == True')
 
-            for layer_num in tqdm_friendly(range(__EXTRACTED_LAYER_START, __EXTRACTED_LAYER_STOP)):
+            if __EXTRACTED_LAYER_START != -1 or __EXTRACTED_LAYER_STOP != -1:
+                print_freindly('Не реализовано')
+                quit(1)
+
+            for layer_num in tqdm_friendly(range(0,len(layers) - __SURVIVE_DEPTH)):
                 vertices = sum(layers[layer_num:layer_num+__SURVIVE_DEPTH], [])
                 subgraph = graph.subgraph(vertices)
                 
@@ -491,11 +495,11 @@ if __name__ == '__main__':
                         help='[Отладка] убрать из графа в послойном расписании все слои кроме двух')
     parser.add_argument('--extracted_layer_start',
                         type=int,
-                        default=3,
+                        default=-1,
                         help='[Отладка] извлекаемые из графа слои, начало диапазона (номер первого слоя подграфа)')
     parser.add_argument('--extracted_layer_stop',
                         type=int,
-                        default=4,
+                        default=-1,
                         help='[Отладка] извлекаеыме из графа слои, конец диапазона (номер первого слоя подграфа)')
     args = parser.parse_args()
 
