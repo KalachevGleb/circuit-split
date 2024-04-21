@@ -313,7 +313,7 @@ def main():
                 print_freindly('Не реализовано')
                 quit(1)
 
-            for layer_num in tqdm_friendly(range(0,len(layers) - __SURVIVE_DEPTH)):
+            for layer_num in tqdm_friendly(range(1,len(layers) - __SURVIVE_DEPTH)):
                 vertices = sum(layers[layer_num:layer_num+__SURVIVE_DEPTH], [])
                 subgraph = graph.subgraph(vertices)
                 
