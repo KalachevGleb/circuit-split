@@ -1,7 +1,7 @@
 #!/bin/bash
 
-TRIALS=10
-ROLLOUT_TIME=10
+TRIALS=200
+ROLLOUT_TIME=1
 GRAPH_PATH="graphs/600k.json"
 
 ts=$( date +"%d.%m.%Y %H:%M:%S" )
