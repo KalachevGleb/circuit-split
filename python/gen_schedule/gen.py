@@ -316,13 +316,21 @@ def main():
             for layer_num in tqdm_friendly(range(1,len(layers) - __SURVIVE_DEPTH)):
                 vertices = sum(layers[layer_num:layer_num+__SURVIVE_DEPTH], [])
                 subgraph = graph.subgraph(vertices)
+
+                layers_choosen = list(range(layer_num, layer_num+__SURVIVE_DEPTH)),
+                layers_sizes = [len(layer) for layer in layers[layer_num:layer_num+__SURVIVE_DEPTH]],
+                total_vertices = len(vertices)
                 
                 if not os.path.exists('cutted_graphs'):
                     os.mkdir('cutted_graphs')
 
                 with open(
                     os.path.join('cutted_graphs',
-                                 os.path.basename(IN_PATH).split('.')[0] + '_' + str(layer_num) + '_' + str(__SURVIVE_DEPTH) + '.json'),
+                                 os.path.basename(IN_PATH).split('.')[0] + '_' + \
+                                                  str(layer_num) + '_' + \
+                                                  str(layers_choosen)[1:-2] + '_' + \
+                                                  str(layers_sizes)[1:-2] + '_' + \
+                                                  str(total_vertices) + '.json'),
                     'w') as fd:
 
                     json.dump({
