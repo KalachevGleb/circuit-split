@@ -1,3 +1,5 @@
+import sys
+
 import json
 
 import numpy as np
@@ -7,29 +9,32 @@ from sklearn import linear_model
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MaxAbsScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.model_selection import KFold
 
 import pandas as pd
 
 from matplotlib import pyplot as plt
 
-PLOT = False
+import warnings
+warnings.filterwarnings("ignore")
 
-data = pd.read_csv('dataset.csv').to_numpy()
-data = data[data[:, -2] < 0.5]
+PLOT = False
+df = pd.read_csv('dataset.csv', dtype=str)
+numeric_df = df.apply(pd.to_numeric, errors='coerce')
+data = numeric_df[numeric_df.notna().all(axis=1)].to_numpy()
+data = data[data[:, -2] > float(sys.argv[1]), :]
+data = data[data[:, -2] < float(sys.argv[2]), :]
 
 print('В датасете осталось объектов:', data.shape[0])
 
 X = data[:, 1:-3]
-y = data[:, -2]    
+y = data[:, -2]
 
-def main(aplha, l1_ratio):
-    global X_train, X_test, y_train, y_test
-
+def train(X_train, X_test, y_train, y_test, model=linear_model.LinearRegression()):
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
 
-    regr = linear_model.ElasticNet(alpha=alpha, l1_ratio=l1_ratio)
-
+    regr = model
     regr.fit(X_train, y_train)
 
     y_pred = regr.predict(scaler.transform(X_test))
@@ -56,37 +61,36 @@ def main(aplha, l1_ratio):
 
     return mpe
 
-if __name__ == '__main__':
-    TEST_ROLLOUT_SIZE = 1000
-    LISNSPACE_POINT_COUNT = 50
+def finetune_elastic():
+    global X, y
+
+    KFOLD_N = 10
+    LISNSPACE_POINT_COUNT = 10
 
     result = []
     for alpha in tqdm(np.linspace(0, 10, LISNSPACE_POINT_COUNT)):
         for l1_ratio in tqdm(np.linspace(0, 1, LISNSPACE_POINT_COUNT)):
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=True)
-
-            p = []
-            for i in range(100):
-                p.append(main(aplha=alpha, l1_ratio=l1_ratio))
-            p = np.mean(p)
+            kf = KFold(n_splits=KFOLD_N, random_state=None, shuffle=True)
+            train_results = []
+            for train1, test1 in kf.split(X):
+                train_results.append(train(X[train1], X[test1], y[train1], y[test1],
+                         linear_model.ElasticNet(alpha=alpha, l1_ratio=l1_ratio)))
 
             result.append({
                 'alpha' : alpha,
                 'l1_ratio' : l1_ratio,
-                'MPE' : p
+                'MPE' : np.mean(train_results)
             })
 
     with open('linear_elastic_net_rollout.json', 'w') as fd:
         json.dump(result, fd, indent=2)
 
-    result.sort(key=lambda experiment: 500 if experiment['MPE'] is None else experiment['MPE'])
-    for exp in result[:5]:
-        ps = []
-        for i in tqdm(range(TEST_ROLLOUT_SIZE)):
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=True)
-            ps.append(main(exp['alpha'], exp['l1_ratio']))
+    result.sort(key=lambda experiment: 1e10 if experiment['MPE'] is None else experiment['MPE'])
+    print(json.dumps(result[:10], indent=2))
 
-        print()
-        print('Предсказанная средняя MPE:', exp['MPE'])
-        print('Реальная средняя MPE:', np.mean(ps))
-        print('Максимальная MPE', np.amax(ps))
+if __name__ == '__main__':
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=True)
+
+    train(X_train, X_test, y_train, y_test)
+
+    finetune_elastic()

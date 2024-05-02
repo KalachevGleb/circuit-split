@@ -181,3 +181,9 @@ python/gen_schedule/*.csv
 python/gen_schedule/*.json
 python/gen_schedule/*.txt
 python/gen_schedule/*.png
+python/time_estimates_with_ml/*/
+python/time_estimates_with_ml/*.zip
+python/time_estimates_with_ml/*.csv
+python/time_estimates_with_ml/*.json
+python/time_estimates_with_ml/*.txt
+python/time_estimates_with_ml/*.png
