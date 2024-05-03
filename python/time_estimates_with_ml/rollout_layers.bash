@@ -5,12 +5,12 @@ rm -rf rollout.csv
 threads=2
 scheme="$1"
 
-for sd in 2 3 4; do
+for sd in 2 3 7; do
     rm -rf cutted_graphs
-    python gen.py ${threads} 1 0 "${scheme}" cut.json --kill_layers True --survive_depth $sd
+    python ../gen_schedule/gen.py ${threads} 1 0 "${scheme}" cut.json --kill_layers True --survive_depth $sd
     
     for cutted_scheme in cutted_graphs/*; do
-        output=$(python gen.py ${threads} 1 0 "${cutted_scheme}" cut.json)
+        output=$(python ../gen_schedule/gen.py ${threads} 1 0 "${cutted_scheme}" cut.json)
 
         single_thread_cost=$(echo "$output" | grep 'Стоимость однопоточного вычисления:' | grep -oE '\b([0-9]+)')
 
