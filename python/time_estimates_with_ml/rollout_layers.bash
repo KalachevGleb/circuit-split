@@ -18,13 +18,18 @@ for sd in 2 3 7; do
         B=$(echo "$output" | grep 'Суммарно чтений между потоками:' | grep -oE '\b[0-9]+(\.[0-9]+)?')
         C=$(echo "$output" | grep 'Суммарно записей:' | grep -oE '\b[0-9]+(\.[0-9]+)?')
 
+        val1=$(echo "$output" | grep 'vals1:')
+        val2=$(echo "$output" | grep 'vals2:')
+        val3=$(echo "$output" | grep 'vals3:')
+        val="\"$val1\",\"$val2\",\"$val3\""
+
         util=$(echo "$output" | grep 'Утилизация потоков:' | grep -oE '\b[0-9]+(\.[0-9]+)?')
 
         barriers=$(echo "$output" | grep 'Барьеров:' | grep -oE '\b([0-9]+)')
 
         name="$(basename "$cutted_scheme" .json)"
 
-        out="\"$name\",$threads,$single_thread_cost,$barriers"
+        out="\"$name\",$val,$threads,$single_thread_cost,$barriers"
         for a in $A; do out="$out,$a"; done
         for b in $B; do out="$out,$b"; done
         for c in $C; do out="$out,$c"; done

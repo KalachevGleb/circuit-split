@@ -395,6 +395,9 @@ def main():
         print_freindly('Суммарно чтений внутри одного потока:', np.sum(in_thread_read, axis=0).tolist())
         print_freindly('Суммарно чтений между потоками:', np.sum(cross_thread_read, axis=0).tolist())
         print_freindly('Суммарно записей:', np.sum(in_thread_write, axis=0).tolist())
+        print_freindly('vals1:', json.dumps([x.tolist() for x in in_thread_read]))
+        print_freindly('vals2:', json.dumps([x.tolist() for x in cross_thread_read]))
+        print_freindly('vals3:', json.dumps([x.tolist() for x in in_thread_write]))
     else:
         print_freindly('Неизвестный MODE:', MODE)
         quit(1)
