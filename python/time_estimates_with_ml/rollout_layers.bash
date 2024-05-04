@@ -1,8 +1,14 @@
 #!/bin/bash
 
+ts=$( date +"%d.%m.%Y %H:%M:%S" )
+bin_dir="bin/$ts"
+mkdir -p "$bin_dir"
+
 rm -rf rollout.csv
+echo "filename,vals1,vals2,vals3,threads,single_thread_cost,barriers,a,b,c,d,e,f,util,ns_per_node,ns_per_read" > rollout.csv
 
 threads=2
+J=10
 scheme="$1"
 
 for sd in 2 3 7; do
@@ -18,9 +24,9 @@ for sd in 2 3 7; do
         B=$(echo "$output" | grep 'Суммарно чтений между потоками:' | grep -oE '\b[0-9]+(\.[0-9]+)?')
         C=$(echo "$output" | grep 'Суммарно записей:' | grep -oE '\b[0-9]+(\.[0-9]+)?')
 
-        val1=$(echo "$output" | grep 'vals1:')
-        val2=$(echo "$output" | grep 'vals2:')
-        val3=$(echo "$output" | grep 'vals3:')
+        val1=$(echo "$output" | grep 'vals1:' | cut -c7-)
+        val2=$(echo "$output" | grep 'vals2:' | cut -c7-)
+        val3=$(echo "$output" | grep 'vals3:' | cut -c7-)
         val="\"$val1\",\"$val2\",\"$val3\""
 
         util=$(echo "$output" | grep 'Утилизация потоков:' | grep -oE '\b[0-9]+(\.[0-9]+)?')
@@ -37,12 +43,21 @@ for sd in 2 3 7; do
         X=$(echo $out | tr -d '\n' | tr -d ' ')
         
         rm -rf blob
-        output=$(simulation cut.json blob/work/ --compiler /usr/bin/g++ --run --time 3)
+        simulation cut.json blob/work/ --compiler /usr/bin/g++ --run --time 1 >> /dev/null
+        cp ./blob/work/generated_code/bin/simulator $bin_dir/$name
 
-        ns_per_node=$(echo "$output" | grep ns_per_node | grep -oE '[0-9]+(\.[0-9]+)')
-        ns_per_read=$(echo "$output" | grep ns_per_read | grep -oE '[0-9]+(\.[0-9]+)')
+        ns_per_node=""
+        ns_per_read=""
+        for i in $(seq 1 $J); do
+            output=$(./blob/work/generated_code/bin/simulator 1)
 
-        Y=$(echo "$ns_per_node,$ns_per_read" | tr -d '\n' | tr -d ' ')
+            ns_per_node="$ns_per_node,$(echo "$output" | grep ns_per_node | grep -oE '[0-9]+(\.[0-9]+)')"
+            ns_per_read="$ns_per_read,$(echo "$output" | grep ns_per_read | grep -oE '[0-9]+(\.[0-9]+)')"
+        done
+        ns_per_node=$(echo $ns_per_node | cut -c2-)
+        ns_per_read=$(echo $ns_per_read | cut -c2-)
+
+        Y=$(echo "\"[$ns_per_node]\",\"[$ns_per_read]\"" | tr -d '\n' | tr -d ' ')
 
         echo "$X,$Y" >> rollout.csv
     done
