@@ -187,3 +187,10 @@ python/time_estimates_with_ml/*.csv
 python/time_estimates_with_ml/*.json
 python/time_estimates_with_ml/*.txt
 python/time_estimates_with_ml/*.png
+python/additivity_check/*/
+python/additivity_check/*.zip
+python/additivity_check/*.csv
+python/additivity_check/*.json
+python/additivity_check/*.txt
+python/additivity_check/*.png
+zip/
