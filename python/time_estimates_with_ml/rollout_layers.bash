@@ -44,7 +44,7 @@ for sd in 2 3 7; do
         
         rm -rf blob
         simulation cut.json blob/work/ --compiler /usr/bin/g++ --run --time 1 >> /dev/null
-        cp ./blob/work/generated_code/bin/simulator $bin_dir/$name
+        cp ./blob/work/generated_code/bin/simulator "$bin_dir/$name"
 
         ns_per_node=""
         ns_per_read=""
