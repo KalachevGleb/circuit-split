@@ -194,3 +194,9 @@ python/additivity_check/*.json
 python/additivity_check/*.txt
 python/additivity_check/*.png
 zip/
+python/big_scheme_stats/*/
+python/big_scheme_stats/*.zip
+python/big_scheme_stats/*.csv
+python/big_scheme_stats/*.json
+python/big_scheme_stats/*.txt
+python/big_scheme_stats/*.png
