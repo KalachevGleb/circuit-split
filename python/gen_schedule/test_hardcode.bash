@@ -21,7 +21,7 @@ gen_and_simulate() {
     mkdir -p build
     cd build
     cmake ..
-    cmake --build . --config Release
+    cmake --build . --config Release -- -j5
     cd ../../../../
     cp blob/work/generated_code/bin/simulator "./$bin_dir/600k_$1_1_0_$2_$3"
 
