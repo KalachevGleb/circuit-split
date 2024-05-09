@@ -8,7 +8,7 @@ from matplotlib import rcParams
 rcParams['figure.figsize'] = 20, 15
 
 GRID_SIZE = 10
-BINS = 50
+BINS = 20
 ALPHA = 0.05
 Q = 1.97196
 N = 200
@@ -28,11 +28,10 @@ for obj in objects:
         data[curr_command].append(obj)
 
 cmd_lengths = [len(cmd) for cmd in commands]
-print(cmd_lengths)
 
 npns = {cmd : [] for cmd in commands}
 for key, vals in data.items():
-    npns[key] = [val['ns_per_node'] for val in vals]
+    npns[key] = [val['ns_per_read'] for val in vals]
 
 exp_nums = [i for i in range(10) if '4 1 0' in commands[i]]
 
@@ -44,11 +43,8 @@ for exp_num in exp_nums:
     delta = x_max - x_min
     grid = np.linspace(x_min - delta / 7, x_max + delta / 7, GRID_SIZE)
     bins = [0] * GRID_SIZE
-
     for x in exp:
         bins[np.argmin(np.abs(grid - x))] += 1
-
-    plot_data = sum([[grid[i]] * bins[i] for i in range(GRID_SIZE)], [])
 
     plt.hist(exp, bins=BINS, histtype='step')
 
@@ -63,7 +59,10 @@ for exp_num in exp_nums:
         print(('[' + command + ']').ljust(max(cmd_lengths) + 5) +  'среднее: ' + str(round(mu, 3)) + \
               ', ди: [' + str(round(low, 3)) + ';' + str(round(high, 3)) + \
                 '], размер ди: ' + str(round(high - low, 3)))
+        
+plt.xlabel = 'ns_per_read'
+plt.ylabel = 'count'
 
 plt.xlim(0, None)
-plt.legend(title='proba_density', loc='upper right', labels=commands)
+plt.legend(title='~ Probability density', loc='upper right', labels=commands)
 plt.savefig('plot.png')
