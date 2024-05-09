@@ -123,17 +123,22 @@ def cut_graph_depth(graph):
             np.random.shuffle(layer)
 
         layer_complexity = 0
-        if DEPTH_LAYER_DUMMY_VERTEX_CHOICE == 'dummy':
+        if DEPTH_LAYER_VERTEX_CHOICE_METHOD == 'dummy':
             layer_complexity += len(layer)
-        elif DEPTH_LAYER_DUMMY_VERTEX_CHOICE == 'backpack':
+        elif DEPTH_LAYER_VERTEX_CHOICE_METHOD == 'backpack':
             for vertex_id in layer:
                 for parent in graph.vs[vertex_id].neighbors(mode='in'):
                     layer_complexity += parent['w']
-        elif DEPTH_LAYER_DUMMY_VERTEX_CHOICE == 'smart_backpack':
-            print_freindly('Не реализовано')
-            quit(1)
+        elif DEPTH_LAYER_VERTEX_CHOICE_METHOD == 'smart_backpack':
+            for vertex_id in layer:
+                thread = graph.vs[vertex_id]['p']
+                for parent in graph.vs[vertex_id].neighbors(mode='in'):
+                    if parent['p'] == thread:   
+                        layer_complexity += parent['w']
+                    else:
+                        layer_complexity += parent['w'] * LOSS1 + LOSS2
         else:
-            print_freindly('Плохой inside_layer_schedule:', DEPTH_LAYER_DUMMY_VERTEX_CHOICE)
+            print_freindly('Плохой inside_layer_schedule:', DEPTH_LAYER_VERTEX_CHOICE_METHOD)
             quit(1)
 
         cumsum = 0
@@ -143,22 +148,25 @@ def cut_graph_depth(graph):
 
             thread = int(cumsum / max(layer_complexity, 1) * THREAD_COUNT)
 
-            if DEPTH_LAYER_DUMMY_VERTEX_CHOICE == 'dummy':
+            if DEPTH_LAYER_VERTEX_CHOICE_METHOD == 'dummy':
                 cumsum += 1 
-            elif DEPTH_LAYER_DUMMY_VERTEX_CHOICE == 'backpack':
+            elif DEPTH_LAYER_VERTEX_CHOICE_METHOD == 'backpack':
                 cumsum += np.sum([parent['w'] for parent in vertex.neighbors(mode='in')])
-            elif DEPTH_LAYER_DUMMY_VERTEX_CHOICE == 'smart_backpack':
-                print_freindly('Не реализовано')
-                quit(1)
+            elif DEPTH_LAYER_VERTEX_CHOICE_METHOD == 'smart_backpack':
+                for parent in vertex.neighbors(mode='in'):
+                    if parent['p'] == thread:   
+                        cumsum += parent['w']
+                    else:
+                        cumsum += parent['w'] * LOSS1 + LOSS2
             else:
-                print_freindly('Плохой inside_layer_schedule:', DEPTH_LAYER_DUMMY_VERTEX_CHOICE)
+                print_freindly('Плохой inside_layer_schedule:', DEPTH_LAYER_VERTEX_CHOICE_METHOD)
                 quit(1)
 
             for parent in vertex.neighbors(mode='in'):
                 if parent['p'] == thread:
                     in_thread_read[-1][thread] += parent['w']
                 else:
-                    cross_thread_read[-1][thread] += parent['w']  
+                    cross_thread_read[-1][thread] += parent['w']
                 in_thread_write[-1][thread] += parent['w']
 
             graph.vs[vertex_id]['p'] = thread
@@ -521,7 +529,7 @@ if __name__ == '__main__':
     OUT_PATH = args.out_file
     MODE = args.mode
     SHUFFLE_DEPTH = args.shuffle_layers
-    DEPTH_LAYER_DUMMY_VERTEX_CHOICE = args.inside_layer_schedule
+    DEPTH_LAYER_VERTEX_CHOICE_METHOD = args.inside_layer_schedule
 
     # Сообщения
     FRIENDLY = True
