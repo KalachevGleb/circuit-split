@@ -33,7 +33,8 @@ npns = {cmd : [] for cmd in commands}
 for key, vals in data.items():
     npns[key] = [val['ns_per_read'] for val in vals]
 
-exp_nums = [i for i in range(10) if '4 1 0' in commands[i]]
+#exp_nums = [i for i in range(10) if '4 1 0' in commands[i]]
+exp_nums = list(range(10))
 
 for exp_num in exp_nums:
     command = commands[exp_num]
