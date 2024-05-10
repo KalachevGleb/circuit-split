@@ -4,19 +4,21 @@ N=200
 
 ts=$( date +"%d.%m.%Y %H:%M:%S" )
 bin_dir="bin/$ts"
-mkdir -p $bin_dir
-rm log.txt
+mkdir -p "$bin_dir"
+echo "" > "$bin_dir/log.txt"
 
 compiler="$1"
 
 execution (){
-    ../../experiments/bin/simulation "$1" blob/work/ --compiler "$3" -B --run --time 1
-    cp blob/work/generated_code/bin/simulator" "$bin_dir/$2"
+    echo "$2"
 
-    echo "\"$2"\"" >> "$bin_dir/log.txt"
+    ../../experiments/bin/simulation "$1" blob/work/ --compiler "$3" -B --run --time 1
+    cp "blob/work/generated_code/bin/simulator" "$bin_dir/$2"
+
+    echo "\"$2\"" >> "$bin_dir/log.txt"
     for i in $(seq 1 200); do
         echo "$i/$N"
-        echo $("./$bin_dir/$2") >> "$bin_dir/log.txt"
+        echo $("./$bin_dir/$2" 1) >> "$bin_dir/log.txt"
     done
 }
 
