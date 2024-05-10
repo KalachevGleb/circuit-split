@@ -92,7 +92,10 @@ for key in ['ns_per_read']:
     ax.set_title(key)
     ax.set_xlabel('threads')
     ax.set_xticks(x_ticks)
-    ax.set_xticklabels(commands)
+    if len(commands) == 10:
+        ax.set_xticklabels([1, 1, 2, 4, 2, 4, 2, 4, 2, 4])
+    else:
+        ax.set_xticklabels(commands)
 
     plt.legend(loc='upper right', labels=commands)
 
