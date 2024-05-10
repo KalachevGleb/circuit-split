@@ -1,8 +1,13 @@
 import json
 import pickle
+import sys
+
+if len(sys.argv) == 1:
+    print('Ожидался txt; выход')
+    quit(1)
 
 objects = []
-with open('log.txt', 'r') as fd:
+with open(sys.argv[1], 'r') as fd:
     curr_text = ""
     while True:
         try:
