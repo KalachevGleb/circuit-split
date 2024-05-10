@@ -46,13 +46,10 @@ for obj in objects:
     else:
         data[curr_command].append(obj)
 
-means1, lows1, highs1 = stats(data, commands, 'ns_per_node')
-means2, lows2, highs2 = stats(data, commands, 'ns_per_read')
+commands = [cmd for cmd in commands if 'greedy' not in cmd]
 
-print(means1 / means2)
-
-exp_nums = list(range(10))
-for key in ['ns_per_node', 'ns_per_read']:
+exp_nums = list(range(len(commands)))
+for key in ['ns_per_read']:
 
     plt.clf()
 
@@ -78,30 +75,24 @@ for key in ['ns_per_node', 'ns_per_read']:
     plt.tight_layout()
     plt.savefig('hist_' + key + '.png')
 
-#
-# Код ниже надо переписать и сделать универсальным
-#
-#
-
-for key in ['ns_per_node', 'ns_per_read']:
+for key in ['ns_per_read']:
     plt.clf()
 
     means, lows, highs = stats(data, commands, key)
     conf_intervals = (highs - lows) / 2
 
-    widths = [0.1] * 10
-    x_ticks = np.arange(10)
+    widths = [0.1] * len(commands)
+    x_ticks = np.arange(len(commands))
 
     fig, ax = plt.subplots()
-    for i in range(10):
+    for i in range(len(commands)):
         bar = ax.bar(x_ticks[i], means[i], widths[i], yerr=conf_intervals[i])
 
     ax.set_ylabel(key)
     ax.set_title(key)
     ax.set_xlabel('threads')
     ax.set_xticks(x_ticks)
-    ax.set_xticklabels([1, 1, 2, 4, 2, 4, 2, 4, 2, 4])
-
+    ax.set_xticklabels(commands)
 
     plt.legend(loc='upper right', labels=commands)
 
