@@ -1,40 +1,40 @@
 #!/bin/bash
 
-mkdir 4
+N=200
 
-simulation simple_circuit_n8192_d20_th1.json blob/work/ --compiler /usr/bin/g++ -B --run --time 1
-cp blob/work/generated_code/bin/simulator ./4/th_1_stock
-simulation simple_circuit_n8192_d20_th2.json blob/work/ --compiler /usr/bin/g++ -B --run --time 1
-cp blob/work/generated_code/bin/simulator ./4/th_2_stock
-simulation simple_circuit_n8192_d20_th4.json blob/work/ --compiler /usr/bin/g++ -B --run --time 1
-cp blob/work/generated_code/bin/simulator ./4/th_4_stock
+ts=$( date +"%d.%m.%Y %H:%M:%S" )
+bin_dir="bin/$ts"
+mkdir -p $bin_dir
+rm log.txt
 
-python gen.py 2 1 0 simple_circuit_n8192_d20_th1.json cut.json --mode 3
-simulation cut.json blob/work/ --compiler /usr/bin/g++ -B --run --time 1
-cp blob/work/generated_code/bin/simulator ./4/th_2_depth
-python gen.py 3 1 0 simple_circuit_n8192_d20_th1.json cut.json --mode 3
-simulation cut.json blob/work/ --compiler /usr/bin/g++ -B --run --time 1
-cp blob/work/generated_code/bin/simulator ./4/th_3_depth
-python gen.py 4 1 0 simple_circuit_n8192_d20_th1.json cut.json --mode 3
-simulation cut.json blob/work/ --compiler /usr/bin/g++ -B --run --time 1
-cp blob/work/generated_code/bin/simulator ./4/th_4_depth
+compiler="$1"
 
-python gen.py 2 1 0 simple_circuit_n8192_d20_th1.json cut.json --mode 1
-simulation cut.json blob/work/ --compiler /usr/bin/g++ -B --run --time 1
-cp blob/work/generated_code/bin/simulator ./4/th_2_greedy_1_0
-python gen.py 3 1 0 simple_circuit_n8192_d20_th1.json cut.json --mode 1
-simulation cut.json blob/work/ --compiler /usr/bin/g++ -B --run --time 1
-cp blob/work/generated_code/bin/simulator ./4/th_3_greedy_1_0
-python gen.py 4 1 0 simple_circuit_n8192_d20_th1.json cut.json --mode 1
-simulation cut.json blob/work/ --compiler /usr/bin/g++ -B --run --time 1
-cp blob/work/generated_code/bin/simulator ./4/th_4_greedy_1_0
+execution (){
+    ../../experiments/bin/simulation "$1" blob/work/ --compiler "$3" -B --run --time 1
+    cp blob/work/generated_code/bin/simulator" "$bin_dir/$2"
 
-python gen.py 2 1 1 simple_circuit_n8192_d20_th1.json cut.json --mode 1
-simulation cut.json blob/work/ --compiler /usr/bin/g++ -B --run --time 1
-cp blob/work/generated_code/bin/simulator ./4/th_2_greedy_1_1
-python gen.py 3 1 1 simple_circuit_n8192_d20_th1.json cut.json --mode 1
-simulation cut.json blob/work/ --compiler /usr/bin/g++ -B --run --time 1
-cp blob/work/generated_code/bin/simulator ./4/th_3_greedy_1_1
-python gen.py 4 1 1 simple_circuit_n8192_d20_th1.json cut.json --mode 1
-simulation cut.json blob/work/ --compiler /usr/bin/g++ -B --run --time 1
-cp blob/work/generated_code/bin/simulator ./4/th_4_greedy_1_1
+    echo "\"$2"\"" >> "$bin_dir/log.txt"
+    for i in $(seq 1 200); do
+        echo "$i/$N"
+        echo $("./$bin_dir/$2") >> "$bin_dir/log.txt"
+    done
+}
+
+execution ../gen_graphs/output/simple_circuit_n8192_d20_th1.json th_1_stock $compiler
+execution ../gen_graphs/output/simple_circuit_n8192_d20_th2.json th_2_stock $compiler
+execution ../gen_graphs/output/simple_circuit_n8192_d20_th4.json th_4_stock $compiler
+
+python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 3
+execution cut.json th_2_depth
+python gen.py 4 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 3
+execution cut.json th_4_depth
+
+python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 1
+execution cut.json th_2_greedy_1_0
+python gen.py 4 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 1
+execution cut.json th_4_greedy_1_0
+
+python gen.py 2 1 1 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 1
+execution cut.json th_2_greedy_1_1
+python gen.py 4 1 1 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 1
+execution cut.json th_4_greedy_1_1
