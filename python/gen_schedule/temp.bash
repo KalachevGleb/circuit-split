@@ -7,6 +7,8 @@ bin_dir="bin/$ts"
 mkdir -p "$bin_dir"
 echo "" > "$bin_dir/log.txt"
 
+cp ./temp.bash "$bin_dir"
+
 compiler="$1"
 
 execution (){
