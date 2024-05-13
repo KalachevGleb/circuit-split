@@ -7,9 +7,13 @@ bin_dir="bin/$ts"
 mkdir -p "$bin_dir"
 echo "" > "$bin_dir/log.txt"
 
-cp ./temp.bash "$bin_dir"
+cp "$0" "$bin_dir"
 
 compiler="$1"
+if [ -z "$compiler" ]; then
+    compiler="/usr/bin/g++"
+fi
+echo "Используется компилятор $compiler"
 
 execution (){
     echo "$2"
@@ -28,17 +32,17 @@ execution ../gen_graphs/output/simple_circuit_n8192_d20_th1.json th_1_stock $com
 execution ../gen_graphs/output/simple_circuit_n8192_d20_th2.json th_2_stock $compiler
 execution ../gen_graphs/output/simple_circuit_n8192_d20_th4.json th_4_stock $compiler
 
-python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 3
+python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th2.json cut.json --mode 3
 execution cut.json th_2_depth
-python gen.py 4 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 3
+python gen.py 4 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th4.json cut.json --mode 3
 execution cut.json th_4_depth
 
-python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 1
-execution cut.json th_2_greedy_1_0
-python gen.py 4 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 1
-execution cut.json th_4_greedy_1_0
+# python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 1
+# execution cut.json th_2_greedy_1_0
+# python gen.py 4 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 1
+# execution cut.json th_4_greedy_1_0
 
-python gen.py 2 1 1 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 1
-execution cut.json th_2_greedy_1_1
-python gen.py 4 1 1 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 1
-execution cut.json th_4_greedy_1_1
+# python gen.py 2 1 1 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 1
+# execution cut.json th_2_greedy_1_1
+# python gen.py 4 1 1 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 1
+# execution cut.json th_4_greedy_1_1
