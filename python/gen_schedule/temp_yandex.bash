@@ -34,7 +34,7 @@ execution ../gen_graphs/output/simple_circuit_n8192_d20_th8.json th_8_stock $com
 
 # python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 3
 # execution cut.json th_2_depth
-python gen.py 8 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 3
+python gen.py 8 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th8.json cut.json --mode 3
 execution cut.json th_8_depth
 
 # python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 1
