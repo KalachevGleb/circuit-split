@@ -1,6 +1,7 @@
 import pickle
 
 import numpy as np
+import pandas as pd
 
 from matplotlib import pyplot as plt
 from matplotlib import rcParams
@@ -58,11 +59,6 @@ for key in ['ns_per_read']:
         exp = np.array([result[key] for result in data[commands[exp_num]]])
 
         x_min, x_max = np.amin(exp), np.amax(exp)
-        # delta = x_max - x_min
-        # grid = np.linspace(0, x_max + delta / 7, GRID_SIZE)
-        # bins = [0] * GRID_SIZE
-        # for x in exp:
-        #     bins[np.argmin(np.abs(grid - x))] += 1
 
         plt.hist(exp, bins=BINS, histtype='step')
         
@@ -101,3 +97,20 @@ for key in ['ns_per_read']:
 
     plt.tight_layout()
     plt.savefig('bars_' + key + '.png')
+
+if len(commands) == 10:
+    print('Не печатаю таблицу; выход')
+
+means, lows, highs = stats(data, commands, key)
+conf_intervals = (highs - lows)
+
+table = {
+    '# потоков' : [cmd.split('_')[1] for cmd in commands],
+    'тип' : ['_'.join(cmd.split('_')[2:]) for cmd in commands],
+    'ср время' : means,
+    'размер ди' : conf_intervals
+}
+
+df = pd.DataFrame(data=table)
+
+print(df)
