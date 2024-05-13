@@ -2,8 +2,8 @@
 
 N=200
 
-ts=$( date +"%d.%m.%Y %H:%M:%S" )
-bin_dir="bin/$ts_$(git rev-parse HEAD)"
+ts="$( date +"%d.%m.%Y %H:%M:%S" )"
+bin_dir="bin/$ts $(git rev-parse HEAD)"
 mkdir -p "$bin_dir"
 echo "" > "$bin_dir/log.txt"
 
