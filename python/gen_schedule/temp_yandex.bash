@@ -28,7 +28,7 @@ execution (){
     done
 }
 
-# execution ../gen_graphs/output/simple_circuit_n8192_d20_th1.json th_1_stock $compiler
+execution ../gen_graphs/output/simple_circuit_n8192_d20_th1.json th_1_stock $compiler
 # execution ../gen_graphs/output/simple_circuit_n8192_d20_th2.json th_2_stock $compiler
 execution ../gen_graphs/output/simple_circuit_n8192_d20_th8.json th_8_stock $compiler
 
