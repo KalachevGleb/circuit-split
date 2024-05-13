@@ -28,21 +28,34 @@ execution (){
     done
 }
 
-execution ../gen_graphs/output/simple_circuit_n8192_d20_th1.json th_1_stock $compiler
-# execution ../gen_graphs/output/simple_circuit_n8192_d20_th2.json th_2_stock $compiler
-execution ../gen_graphs/output/simple_circuit_n8192_d20_th8.json th_8_stock $compiler
+execution ../gen_graphs/output/simple_circuit_n8192_d20_th1.json 1_stock $compiler
+execution ../gen_graphs/output/simple_circuit_n8192_d20_th2.json 2_stock $compiler
+execution ../gen_graphs/output/simple_circuit_n8192_d20_th4.json 4_stock $compiler
+execution ../gen_graphs/output/simple_circuit_n8192_d20_th8.json 8_stock $compiler
 
-# python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 3
-# execution cut.json th_2_depth
-python gen.py 8 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th8.json cut.json --mode 3
-execution cut.json th_8_depth
+python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th2.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
+execution cut.json 2_depth $compiler
+python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th2.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
+execution cut.json 2_depth_shuf $compiler
+python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th2.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
+execution cut.json 2_depth_bp $compiler
+python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th2.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
+execution cut.json 2_depth_shuf_bp $compiler
 
-# python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 1
-# execution cut.json th_2_greedy_1_0
-# python gen.py 4 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 1
-# execution cut.json th_4_greedy_1_0
+python gen.py 4 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th4.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
+execution cut.json 4_depth $compiler
+python gen.py 4 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th4.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
+execution cut.json 4_depth_shuf $compiler
+python gen.py 4 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th4.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
+execution cut.json 4_depth_bp $compiler
+python gen.py 4 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th4.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
+execution cut.json 4_depth_shuf_bp $compiler
 
-# python gen.py 2 1 1 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 1
-# execution cut.json th_2_greedy_1_1
-# python gen.py 4 1 1 ../gen_graphs/output/simple_circuit_n8192_d20_th1.json cut.json --mode 1
-# execution cut.json th_4_greedy_1_1
+python gen.py 8 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th8.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
+execution cut.json 8_depth $compiler
+python gen.py 8 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th8.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
+execution cut.json 8_depth_shuf $compiler
+python gen.py 8 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th8.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
+execution cut.json 8_depth_bp $compiler
+python gen.py 8 1 0 ../gen_graphs/output/simple_circuit_n8192_d20_th8.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
+execution cut.json 8_depth_shuf_bp $compiler
