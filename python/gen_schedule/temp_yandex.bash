@@ -17,7 +17,7 @@ echo "Используется компилятор $compiler"
 execution (){
     echo "$2"
 
-    if [ -z "$4" || ! -f "$4/$2"]; then
+    if [ -z "$4" ] || [ ! -f "$4/$2" ]; then
         ../../experiments/bin/simulation "$1" blob/work/ --compiler "$3" -B --run --time 1
         cp "blob/work/generated_code/bin/simulator" "$bin_dir/$2"
     else
@@ -31,7 +31,7 @@ execution (){
     done
 }
 
-for width in "8192", "16384", "32768", "65536", "131072"; do
+for width in "8192" "16384" "32768" "65536" "131072"; do
     execution ../gen_graphs/output/simple_circuit_n${width}_d20_th1.json 1_stock $compiler $last_bin_dir
     python gen.py 1 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th2.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
     execution cut.json 1_depth $compiler $last_bin_dir
