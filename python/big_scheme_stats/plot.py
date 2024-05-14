@@ -105,8 +105,8 @@ means, lows, highs = stats(data, commands, key)
 conf_intervals = (highs - lows)
 
 table = {
-    '# потоков' : [cmd.split('_')[1] for cmd in commands],
-    'тип' : ['_'.join(cmd.split('_')[2:]) for cmd in commands],
+    '# потоков' : [cmd.split('_')[0] for cmd in commands],
+    'тип' : ['_'.join(cmd.split('_')[1:]) for cmd in commands],
     'ср время' : means,
     'размер ди' : conf_intervals
 }
