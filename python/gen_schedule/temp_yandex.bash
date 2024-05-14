@@ -11,23 +11,25 @@ last_bin_dir="$(ls -td bin/*/ | head -1)"
 
 cp "$0" "$bin_dir"
 
-compiler="/usr/bin/g++"
+compiler="/usr/bin/clang++"
 echo "Используется компилятор $compiler"
 
 execution (){
     echo "$2"
 
-    if [ -z "$4" ] || [ ! -f "$4/$2" ]; then
+    bin_name="$5_$2"
+
+    if [ -z "$4" ] || [ ! -f "$4/$bin_name" ]; then
         ../../experiments/bin/simulation "$1" blob/work/ --compiler "$3" -B --run --time 1
-        cp "blob/work/generated_code/bin/simulator" "$bin_dir/$2"
+        cp "blob/work/generated_code/bin/simulator" "$bin_dir/$bin_name"
     else
-        cp "$4/$2" "$bin_dir/$2"
+        cp "$4/$bin_name" "$bin_dir/$bin_name"
     fi
 
-    echo "\"$2\"" >> "$bin_dir/$6.txt"
+    echo "\"$2\"" >> "$bin_dir/$5.txt"
     for i in $(seq 1 200); do
         echo "$i/$N"
-        echo $("./$bin_dir/$2" 1) >> "$bin_dir/$6.txt"
+        echo $("./$bin_dir/$bin_name" 1) >> "$bin_dir/$5.txt"
     done
 }
 
