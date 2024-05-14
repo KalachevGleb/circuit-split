@@ -20,6 +20,9 @@ import matplotlib.pyplot as plt
 # Добавить проверку на порядок
 
 def print_freindly(*args):
+    if MODE == 4:
+        return
+    
     if FRIENDLY:
         print(*args)
 
@@ -356,6 +359,30 @@ def main():
             layers, heavinesses, in_thread_read, cross_thread_read, in_thread_write = cut_graph_depth(graph=graph)
 
         memory_order = sum(layers, [])
+    elif MODE == 4:
+        with open(IN_PATH, 'r') as fd:
+            graph_raw_ = json.load(fd)
+
+        schedule = graph_raw_['schedule']
+        sync_poins = graph_raw_['sync_points']
+
+        THREAD_COUNT_ = len(schedule)
+
+        reads = [0] * THREAD_COUNT_
+        writes = [0] * THREAD_COUNT_
+        syncs = [0] * THREAD_COUNT_
+
+        for thread in range(THREAD_COUNT_):
+            for op in schedule[thread]:
+                if op[0] == 0:
+                    reads[thread] += np.sum([vertex['w'] for vertex in graph.vs[op[1]].neighbors(mode='in')])
+                    writes[thread] += graph.vs[op[1]]['w']
+                elif op[0] == 1:
+                    syncs[thread] += 1
+                else:
+                    print_freindly('Плохое расписание')
+                    quit(1)
+
     else:
         print_freindly('Неизвестный MODE:', MODE)
         quit(1)
@@ -376,7 +403,7 @@ def main():
             quit(2)
         print_freindly('TODO: Добавить полную проверку корректности расписания')
         print_freindly('OK')
-    elif MODE == 3:
+    elif MODE in [3, 4]:
         print_freindly('Не умею проверять расписание для MODE == 3')
     else:
         print_freindly('Неизвестный MODE:', MODE)
@@ -406,6 +433,13 @@ def main():
         # print_freindly('vals1:', json.dumps([x.tolist() for x in in_thread_read]))
         # print_freindly('vals2:', json.dumps([x.tolist() for x in cross_thread_read]))
         # print_freindly('vals3:', json.dumps([x.tolist() for x in in_thread_write]))
+    elif MODE == 4:
+        print(json.dumps({
+            'syncs' : np.array(syncs, dtype=int).tolist(),
+            'max_syncs' : max(np.array(syncs, dtype=int).tolist()),
+            'reads' : np.array(reads, dtype=int).tolist(),
+            'writes' : np.array(writes, dtype=int).tolist()
+            }))
     else:
         print_freindly('Неизвестный MODE:', MODE)
         quit(1)
@@ -451,6 +485,9 @@ def main():
                 schedule[thread].append([1, len(sync_points)])
 
             sync_points.append([list(range(THREAD_COUNT)), list(range(THREAD_COUNT))])
+    elif MODE == 4:
+        print_freindly('Это не требуется')
+        quit(0)
     else:
         print_freindly('Неизвестный MODE:', MODE)
         quit(1)
@@ -500,7 +537,7 @@ if __name__ == '__main__':
                         help='Режим распределения вершин в слое послойного расписания')
     parser.add_argument('--mode',
                         type=int,
-                        choices=[1, 2, 3],
+                        choices=[1, 2, 3, 4],
                         default=3,
                         help='Выбор алгоритма построения расписания')
     parser.add_argument('--survive_depth',
@@ -543,7 +580,5 @@ if __name__ == '__main__':
     __SURVIVE_DEPTH = args.survive_depth
     __EXTRACTED_LAYER_START = args.extracted_layer_start
     __EXTRACTED_LAYER_STOP = args.extracted_layer_stop
-
-    print(__KILL_LAYERS)
 
     main()
