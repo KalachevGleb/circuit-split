@@ -19,11 +19,13 @@ execution (){
 
     bin_name="$5_$2"
 
-    if [ -z "$4" ] || [ ! -f "$4/$bin_name" ]; then
+    if [ -z "$4" ] || [ ! -f "$4/$bin_name.json" ] || [ ! -f "$4/$bin_name" ]; then
         ../../experiments/bin/simulation "$1" blob/work/ --compiler "$3" -B --run --time 1
+        cp "$1" "$bin_dir/${bin_name}.json"
         cp "blob/work/generated_code/bin/simulator" "$bin_dir/$bin_name"
     else
         cp "$4/$bin_name" "$bin_dir/$bin_name"
+        cp "$4/$bin_name.json" "$bin_dir/$bin_name.json"
     fi
 
     echo "\"$2\"" >> "$bin_dir/$5.txt"
