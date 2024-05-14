@@ -27,7 +27,7 @@ execution (){
     echo "\"$2\"" >> "$bin_dir/$6.txt"
     for i in $(seq 1 200); do
         echo "$i/$N"
-        echo $("./$bin_dir/$2" 1) >> "$bin_dir/6.txt"
+        echo $("./$bin_dir/$2" 1) >> "$bin_dir/$6.txt"
     done
 }
 
