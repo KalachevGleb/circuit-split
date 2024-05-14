@@ -5,7 +5,7 @@ N=200
 ts="$( date +"%d.%m.%Y %H:%M:%S" )"
 bin_dir="bin/$ts $(git rev-parse HEAD)"
 mkdir -p "$bin_dir"
-echo "" > "$bin_dir/log.txt"
+# echo "" > "$bin_dir/log.txt"
 
 last_bin_dir="$(ls -td bin/*/ | head -1)"
 
