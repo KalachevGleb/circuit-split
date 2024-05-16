@@ -121,7 +121,7 @@ execution (){
 }
 
 if [ "$1" == 'pc' ]; then
-    for width in "8192"; do
+    for width in "8192" "16384" "32768" "65536" "131072"; do
         execution ../gen_graphs/output/simple_circuit_n${width}_d20_th1.json 1_stock "$compiler" "$last_bin_dir" "$width"
         python gen.py 1 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th2.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
         execution cut.json 1_depth "$compiler" "$last_bin_dir" "$width"
