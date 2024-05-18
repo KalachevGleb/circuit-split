@@ -201,3 +201,4 @@ python/big_scheme_stats/*.json
 python/big_scheme_stats/*.txt
 python/big_scheme_stats/*.png
 python/big_scheme_stats/*.pickle
+python/big_scheme_stats/*.pdf
