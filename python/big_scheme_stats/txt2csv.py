@@ -1,5 +1,6 @@
 import json
 import sys
+import os
 
 import pandas as pd
 import numpy as np
@@ -16,66 +17,78 @@ def stats(arr):
 
     return mu, high - low
 
-if len(sys.argv) == 1:
-    print('Ожидался txt; выход')
-    quit(1)
-
-objects = []
-with open(sys.argv[1], 'r') as fd:
-    curr_text = ""
-    while True:
-        try:
-            line = fd.readline()
-            if len(line) == 0: 
+def run(path):
+    objects = []
+    with open(path, 'r') as fd:
+        curr_text = ""
+        while True:
+            try:
+                line = fd.readline()
+                if len(line) == 0: 
+                    break
+            except:
                 break
-        except:
+            
+            curr_text = curr_text + line
+            try:
+                objects.append(json.loads(curr_text))
+                curr_text = ""
+                continue
+            except:
+                continue
+
+    result = []
+
+    curr_shift = 0
+    while True:
+        if curr_shift == len(objects):
             break
-        
-        curr_text = curr_text + line
-        try:
-            objects.append(json.loads(curr_text))
-            curr_text = ""
-            continue
-        except:
-            continue
+        if curr_shift > len(objects):
+            print('Число объектов не кратно 2 + 2 * N')
+            quit(1)
 
-result = []
+        name = objects[curr_shift] + '_' + os.path.basename(path)[:-4]
+        top = objects[curr_shift + 1]
 
-curr_shift = 0
-while True:
-    if curr_shift == len(objects):
-        break
-    if curr_shift > len(objects):
-        print('Число объектов не кратно 2 + 2 * N')
-        quit(1)
+        perfs = dict()
+        nprs = []
+        for j in range(N):
 
-    name = objects[curr_shift]
-    top = objects[curr_shift + 1]
+            perf = objects[curr_shift + j + 2]
+            for key in perf.keys():
+                if key not in perfs.keys():
+                    perfs[key] = []
 
-    perfs = dict()
-    nprs = []
-    for j in range(N):
+                perfs[key].append(int(perf[key].split(key)[0].replace(' ', '').replace('\u202f', '')))
 
-        perf = objects[curr_shift + j + 2]
-        for key in perf.keys():
-            if key not in perfs.keys():
-                perfs[key] = []
+            nprs.append(float(objects[curr_shift + j + 2 + N]['ns_per_read']))
 
-            perfs[key].append(int(perf[key].split(key)[0].replace(' ', '').replace('\u202f', '')))
+        perfs_ = dict()
+        perfs_['промахи ср'], perfs_['промахи ди'] = stats(perfs['cache-misses'])
+        perfs_['исп кэша ср'], perfs_['исп кэша ди'] = stats(perfs['cache-references'])
+        perfs_['промахи L2 ср'], perfs_['промахи L2 ди'] = stats(perfs['l2_rqsts.all_demand_miss'])
+        perfs_['исп L2 ср'], perfs_['исп L2 ди'] = stats(perfs['l2_rqsts.all_demand_references'])
+        perfs = perfs_
 
-        nprs.append(float(objects[curr_shift + j + 2 + N]['ns_per_read']))
+        nprs_mean, nprs_ci = stats(nprs)
 
-    perfs_ = dict()
-    for key in perfs.keys():
-        perfs_[key + '_mean'], perfs_[key + '_ci'] = stats(perfs[key])
-    perfs = perfs_
+        result.append({'name' : name} | top | perfs | {'nprs_mean' : nprs_mean, 'nprs_ci' : nprs_ci})
 
-    nprs_mean, nprs_ci = stats(nprs)
+        curr_shift += 2 + 2 * N
 
-    result.append({'name' : name} | top | perfs | {'nprs_mean' : nprs_mean, 'nprs_ci' : nprs_ci})
+    return pd.DataFrame(result)
 
-    curr_shift += 2 + 2 * N
- 
-df = pd.DataFrame(result)
-print(df.head())
-print(list(df))
+if __name__ == '__main__':
+
+    dfs = []
+
+    for filename in os.listdir('13to17'):
+        dfs.append(run(os.path.join('13to17', filename)))
+
+    df = pd.concat(dfs, axis=0).reset_index()
+    del df['index']
+
+    print(df)
+    print(list(df))
+
+    df.to_csv(os.path.join('13to17', 'table.csv'))
