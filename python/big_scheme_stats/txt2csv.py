@@ -64,8 +64,8 @@ def run(path):
             nprs.append(float(objects[curr_shift + j + 2 + N]['ns_per_read']))
 
         ratios = dict()
-        ratios['cache_miss_ratio'] = np.mean(np.array(perfs['cache-misses']) / np.array(perfs['cache-references']))
-        ratios['L2_miss_ratio'] = np.mean(np.array(perfs['l2_rqsts.all_demand_miss']) / np.array(perfs['l2_rqsts.all_demand_references']))                          
+        ratios['mean_of_cache_miss_ratios'] = np.mean(np.array(perfs['cache-misses']) / np.array(perfs['cache-references']))
+        ratios['mean_of_L2_miss_ratios'] = np.mean(np.array(perfs['l2_rqsts.all_demand_miss']) / np.array(perfs['l2_rqsts.all_demand_references']))                          
 
         perfs_ = dict()
         perfs_['промахи ср'], perfs_['промахи ди'] = stats(perfs['cache-misses'])
