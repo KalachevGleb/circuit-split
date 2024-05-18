@@ -63,16 +63,20 @@ def run(path):
 
             nprs.append(float(objects[curr_shift + j + 2 + N]['ns_per_read']))
 
+        ratios = dict()
+        ratios['cache_miss_ratio'] = np.mean(np.array(perfs['cache-misses']) / np.array(perfs['cache-references']))
+        ratios['L2_miss_ratio'] = np.mean(np.array(perfs['l2_rqsts.all_demand_miss']) / np.array(perfs['l2_rqsts.all_demand_references']))                          
+
         perfs_ = dict()
         perfs_['промахи ср'], perfs_['промахи ди'] = stats(perfs['cache-misses'])
         perfs_['исп кэша ср'], perfs_['исп кэша ди'] = stats(perfs['cache-references'])
         perfs_['промахи L2 ср'], perfs_['промахи L2 ди'] = stats(perfs['l2_rqsts.all_demand_miss'])
         perfs_['исп L2 ср'], perfs_['исп L2 ди'] = stats(perfs['l2_rqsts.all_demand_references'])
-        perfs = perfs_
+        perfs = perfs_                                        
 
         nprs_mean, nprs_ci = stats(nprs)
 
-        result.append({'name' : name} | top | perfs | {'nprs_mean' : nprs_mean, 'nprs_ci' : nprs_ci})
+        result.append({'name' : name} | top | perfs | ratios | {'nprs_mean' : nprs_mean, 'nprs_ci' : nprs_ci})
 
         curr_shift += 2 + 2 * N
 
