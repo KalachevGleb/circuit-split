@@ -121,87 +121,87 @@ execution (){
 }
 
 if [ "$1" == 'pc' ]; then
-    for width in "8192" "16384" "32768" "65536" "131072"; do
-        execution ../gen_graphs/output/simple_circuit_n${width}_d20_th1.json 1_stock "$compiler" "$last_bin_dir" "$width"
-        python gen.py 1 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th2.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
+    for width in 1 2 3 4 5 6 7 8 9 10 11 12 13 14; do #"1024" "2048" "4096" "8192" "16384" "32768" "65536" "131072"; do
+        execution ../gen_graphs/output/bitonic_sort_${width}_one_thread.json 1_stock "$compiler" "$last_bin_dir" "$width"
+        python gen.py 1 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
         execution cut.json 1_depth "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 1 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th2.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
+        # python gen.py 1 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
         # execution cut.json 1_depth_shuf "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 1 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th2.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
+        # python gen.py 1 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
         # execution cut.json 1_depth_dummy "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 1 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th2.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
+        # python gen.py 1 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
         # execution cut.json 1_depth_shuf_dummy "$compiler" "$last_bin_dir" "$width"
 
-        execution ../gen_graphs/output/simple_circuit_n${width}_d20_th2.json 2_stock "$compiler" "$last_bin_dir" "$width"
-        python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th2.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
+        # execution ../gen_graphs/output/bitonic_sort_${width}.json 2_stock "$compiler" "$last_bin_dir" "$width"
+        python gen.py 2 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
         execution cut.json 2_depth "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th2.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
+        # python gen.py 2 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
         # execution cut.json 2_depth_shuf "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th2.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
+        # python gen.py 2 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
         # execution cut.json 2_depth_dummy "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th2.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
+        # python gen.py 2 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
         # execution cut.json 2_depth_shuf_dummy "$compiler" "$last_bin_dir" "$width"
 
-        execution ../gen_graphs/output/simple_circuit_n${width}_d20_th4.json 4_stock "$compiler" "$last_bin_dir" "$width"
-        python gen.py 4 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th4.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
+        # execution ../gen_graphs/output/bitonic_sort_${width}.json 4_stock "$compiler" "$last_bin_dir" "$width"
+        python gen.py 4 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
         execution cut.json 4_depth "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 4 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th4.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
+        # python gen.py 4 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
         # execution cut.json 4_depth_shuf "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 4 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th4.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
+        # python gen.py 4 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
         # execution cut.json 4_depth_dummy "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 4 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th4.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
+        # python gen.py 4 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
         # execution cut.json 4_depth_shuf_dummy "$compiler" "$last_bin_dir" "$width"
 
-        # execution ../gen_graphs/output/simple_circuit_n${width}_d20_th8.json 8_stock "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 8 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th8.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
+        # execution ../gen_graphs/output/bitonic_sort_${width}.json 8_stock "$compiler" "$last_bin_dir" "$width"
+        # python gen.py 8 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
         # execution cut.json 8_depth "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 8 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th8.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
+        # python gen.py 8 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
         # execution cut.json 8_depth_shuf "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 8 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th8.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
+        # python gen.py 8 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
         # execution cut.json 8_depth_dummy "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 8 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th8.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
+        # python gen.py 8 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
         # execution cut.json 8_depth_shuf_dummy "$compiler" "$last_bin_dir" "$width"
     done
 elif [ "$1" == 'server' ]; then
     for width in "8192" "16384" "32768" "65536" "131072"; do
-        execution ../gen_graphs/output/simple_circuit_n${width}_d20_th1.json 1_stock "$compiler" "$last_bin_dir" "$width"
-        python gen.py 1 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th2.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
+        execution ../gen_graphs/output/bitonic_sort_${width}.json 1_stock "$compiler" "$last_bin_dir" "$width"
+        python gen.py 1 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
         execution cut.json 1_depth "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 1 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th2.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
+        # python gen.py 1 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
         # execution cut.json 1_depth_shuf "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 1 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th2.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
+        # python gen.py 1 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
         # execution cut.json 1_depth_dummy "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 1 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th2.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
+        # python gen.py 1 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
         # execution cut.json 1_depth_shuf_dummy "$compiler" "$last_bin_dir" "$width"
 
-        execution ../gen_graphs/output/simple_circuit_n${width}_d20_th2.json 2_stock "$compiler" "$last_bin_dir" "$width"
-        python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th2.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
+        execution ../gen_graphs/output/bitonic_sort_${width}.json 2_stock "$compiler" "$last_bin_dir" "$width"
+        python gen.py 2 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
         execution cut.json 2_depth "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th2.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
+        # python gen.py 2 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
         # execution cut.json 2_depth_shuf "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th2.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
+        # python gen.py 2 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
         # execution cut.json 2_depth_dummy "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 2 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th2.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
+        # python gen.py 2 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
         # execution cut.json 2_depth_shuf_dummy "$compiler" "$last_bin_dir" "$width"
 
-        execution ../gen_graphs/output/simple_circuit_n${width}_d20_th4.json 4_stock "$compiler" "$last_bin_dir" "$width"
-        python gen.py 4 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th4.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
+        execution ../gen_graphs/output/bitonic_sort_${width}.json 4_stock "$compiler" "$last_bin_dir" "$width"
+        python gen.py 4 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
         execution cut.json 4_depth "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 4 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th4.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
+        # python gen.py 4 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
         # execution cut.json 4_depth_shuf "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 4 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th4.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
+        # python gen.py 4 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
         # execution cut.json 4_depth_dummy "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 4 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th4.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
+        # python gen.py 4 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
         # execution cut.json 4_depth_shuf_dummy "$compiler" "$last_bin_dir" "$width"
 
-        execution ../gen_graphs/output/simple_circuit_n${width}_d20_th8.json 8_stock "$compiler" "$last_bin_dir" "$width"
-        python gen.py 8 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th8.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
+        execution ../gen_graphs/output/bitonic_sort_${width}.json 8_stock "$compiler" "$last_bin_dir" "$width"
+        python gen.py 8 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
         execution cut.json 8_depth "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 8 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th8.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
+        # python gen.py 8 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
         # execution cut.json 8_depth_shuf "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 8 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th8.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
+        # python gen.py 8 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
         # execution cut.json 8_depth_dummy "$compiler" "$last_bin_dir" "$width"
-        # python gen.py 8 1 0 ../gen_graphs/output/simple_circuit_n${width}_d20_th8.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
+        # python gen.py 8 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
         # execution cut.json 8_depth_shuf_dummy "$compiler" "$last_bin_dir" "$width"
     done
 else
