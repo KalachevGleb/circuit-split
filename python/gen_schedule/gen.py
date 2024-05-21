@@ -372,19 +372,33 @@ def main():
         writes = [0] * THREAD_COUNT_
         syncs = [0] * THREAD_COUNT_
         ops = []
+        full_ops = []
+        sps = []
 
         for thread in range(THREAD_COUNT_):
             curr_ops = 0
+            curr_full_ops = 0
+            curr_sps = 0
+
             ops.append([])
+            full_ops.append([])
+            sps.append([])
+
             for op in schedule[thread]:
                 if op[0] == 0:
                     reads[thread] += np.sum([vertex['w'] for vertex in graph.vs[op[1]].neighbors(mode='in')])
                     writes[thread] += graph.vs[op[1]]['w']
+
                     curr_ops += 1
+                    curr_full_ops += int(np.sum([vertex['w'] for vertex in graph.vs[op[1]].neighbors(mode='in')]))
                 elif op[0] == 1:
                     syncs[thread] += 1
+                    sps[-1].append([len(sync_poins[op[1]][0]), len(sync_poins[op[1]][1])])
+
                     ops[-1].append(curr_ops)
+                    full_ops[-1].append(curr_full_ops)
                     curr_ops = 0
+                    curr_full_ops = 0
                 else:
                     print_freindly('Плохое расписание')
                     quit(1)
@@ -444,7 +458,9 @@ def main():
             'max_syncs' : max(np.array(syncs, dtype=int).tolist()),
             'reads' : np.array(reads, dtype=int).tolist(),
             'writes' : np.array(writes, dtype=int).tolist(),
-            'ops' : ops
+            'ops' : ops,
+            'full_ops' : full_ops,
+            'sync_points' : sps
             }))
     else:
         print_freindly('Неизвестный MODE:', MODE)
