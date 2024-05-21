@@ -86,8 +86,8 @@ if __name__ == '__main__':
 
     dfs = []
 
-    for filename in os.listdir('13to17'):
-        dfs.append(run(os.path.join('13to17', filename)))
+    for filename in os.listdir(sys.argv[1]):
+        dfs.append(run(os.path.join(sys.argv[1], filename)))
 
     df = pd.concat(dfs, axis=0).reset_index()
     del df['index']
@@ -95,4 +95,4 @@ if __name__ == '__main__':
     print(df)
     print(list(df))
 
-    df.to_csv(os.path.join('13to17', 'table.csv'))
+    df.to_csv(os.path.join(sys.argv[1], 'table.csv'))
