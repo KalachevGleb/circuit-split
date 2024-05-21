@@ -378,7 +378,6 @@ def main():
         for thread in range(THREAD_COUNT_):
             curr_ops = 0
             curr_full_ops = 0
-            curr_sps = 0
 
             ops.append([])
             full_ops.append([])
@@ -393,10 +392,11 @@ def main():
                     curr_full_ops += int(np.sum([vertex['w'] for vertex in graph.vs[op[1]].neighbors(mode='in')]))
                 elif op[0] == 1:
                     syncs[thread] += 1
-                    sps[-1].append([len(sync_poins[op[1]][0]), len(sync_poins[op[1]][1])])
 
+                    sps[-1].append([len(sync_poins[op[1]][0]), len(sync_poins[op[1]][1])])
                     ops[-1].append(curr_ops)
                     full_ops[-1].append(curr_full_ops)
+
                     curr_ops = 0
                     curr_full_ops = 0
                 else:
