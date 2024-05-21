@@ -153,10 +153,10 @@ def main():
 
     #gen_simple_circuits([10],2,[1,2,4])
     # generate simple circuits
-    gen_simple_circuits([2**i for i in range(8, 17)], 5, [1, 2, 4, 8, 16])
-    gen_simple_circuits([2**i for i in range(8, 17)], 10, [1, 2, 4, 8, 16])
-    gen_simple_circuits([2**i for i in range(8, 17)], 15, [1, 2, 4, 8, 16])
-    gen_simple_circuits([2**i for i in range(8, 17)], 20, [1, 2, 4, 8, 16])
+    gen_simple_circuits([2**i for i in range(12, 18)], 5, [1, 2, 4, 8, 16])
+    gen_simple_circuits([2**i for i in range(12, 18)], 10, [1, 2, 4, 8, 16])
+    gen_simple_circuits([2**i for i in range(12, 18)], 15, [1, 2, 4, 8, 16])
+    gen_simple_circuits([2**i for i in range(12, 18)], 20, [1, 2, 4, 8, 16])
     #gen_simple_circuits([2 ** i for i in range(16, 21)], 2, [1, 2, 4, 8, 16])
 
     for logn in range(1, 15):
