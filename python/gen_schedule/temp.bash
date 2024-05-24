@@ -146,7 +146,7 @@ if [ "$1" == "real" ]; then
         execution cut.json real_${threads}_depth "$compiler" "$last_bin_dir" 600
     done
 
-if [ "$1" == "real_extended" ]; then
+elif [ "$1" == "real_extended" ]; then
 
     python gen.py 1 1 0 "./graphs/50k.json" cut.json --mode 1
     execution  cut.json real_1_dummy "$compiler" "$last_bin_dir" 50
