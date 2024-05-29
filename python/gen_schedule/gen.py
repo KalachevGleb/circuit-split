@@ -9,6 +9,10 @@ from tqdm import tqdm
 
 import matplotlib.pyplot as plt
 
+import cpp
+Cache = cpp.Cache
+Layer = cpp.Layer
+
 # TODO
 # За кождый поток делать по шагу
 # Действительно поптимальный reorder()
@@ -402,6 +406,31 @@ def main():
                 else:
                     print_freindly('Плохое расписание')
                     quit(1)
+    elif MODE == 5:
+        print_freindly('Пользуюсь однопоточным жадным кэшированием')
+
+        precomputed = [vertex.index for vertex in graph.vs if vertex.degree(mode='in') == 0]
+        schedule = []
+
+        layer = Layer(5000)
+        layer.init_graph(len(graph.vs))
+        for edge in graph_raw['edges']:
+            layer.add_edge(edge[0], edge[1])
+        layer.set_weights(list(graph.vs['w']))
+        for vertex_id in precomputed:
+            layer.set_score(vertex_id, graph.vs[vertex_id]['w'])
+        layer.init_cache(MEM_SIZE)
+        if np.amax(graph.vs['w']) > MEM_SIZE:
+            print_freindly('Размер кэша меньше наибольшего веса среди вершин')
+            quit(1)
+        layer.start()
+
+        print_freindly('Главный цикл')
+
+        for i in tqdm_friendly(range(nc)):
+            schedule.append(layer.step())
+
+        memory_order = list(range(nc))
     else:
         print_freindly('Неизвестный MODE:', MODE)
         quit(1)
@@ -424,6 +453,9 @@ def main():
         print_freindly('OK')
     elif MODE in [3, 4]:
         print_freindly('Не умею проверять расписание для MODE == 3')
+    elif MODE == 5:
+        print_freindly('Дебаг1:', len(schedule) - len(set(schedule)))
+        print_freindly('Дебаг2:', len(schedule) - nc)
     else:
         print_freindly('Неизвестный MODE:', MODE)
         quit(1)
@@ -462,6 +494,8 @@ def main():
             'full_ops' : full_ops,
             'sync_points' : sps
             }))
+    elif MODE == 5:
+        print_freindly('Нет метрик')
     else:
         print_freindly('Неизвестный MODE:', MODE)
         quit(1)
@@ -510,6 +544,9 @@ def main():
     elif MODE == 4:
         print_freindly('Это не требуется')
         quit(0)
+    elif MODE == 5:
+        schedule = [[[0, vertex_id] for vertex_id in schedule]]
+        sync_points = []
     else:
         print_freindly('Неизвестный MODE:', MODE)
         quit(1)
@@ -548,6 +585,10 @@ if __name__ == '__main__':
     parser.add_argument('LOSS2', type=float, help='LOSS2')
     parser.add_argument('in_file', type=str, help='Входной граф')
     parser.add_argument('out_file', type=str, help='Выходное расписание')
+    parser.add_argument('--mem_size',
+                        type=int,
+                        default=64,
+                        help='Размер кэша [КБ]')
     parser.add_argument('--shuffle_layers',
                         type=bool,
                         default=False,
@@ -559,7 +600,7 @@ if __name__ == '__main__':
                         help='Режим распределения вершин в слое послойного расписания')
     parser.add_argument('--mode',
                         type=int,
-                        choices=[1, 2, 3, 4],
+                        choices=[1, 2, 3, 4, 5],
                         default=3,
                         help='Выбор алгоритма построения расписания')
     parser.add_argument('--survive_depth',
@@ -589,6 +630,7 @@ if __name__ == '__main__':
     MODE = args.mode
     SHUFFLE_DEPTH = args.shuffle_layers
     DEPTH_LAYER_VERTEX_CHOICE_METHOD = args.inside_layer_schedule
+    MEM_SIZE = args.mem_size * 1024
 
     # Сообщения
     FRIENDLY = True
