@@ -231,7 +231,18 @@ elif [ "$1" == 'simple_extended' ]; then
             execution cut.json simpled${depth}_${threads}_depthshufdummy "$compiler" "$last_bin_dir" "$width"
         done
     done
+
+elif [ "$1" == 'cache' ]; then
+
+    python gen.py 1 1 0 graphs/600k.json stock.json --mode 1
+    execution stock.json stock "$compiler" "$last_bin_dir" 0
+
+    python gen.py 1 1 0 graphs/600k.json cache.json --mode 5 --mem_size 64
+    execution cache.json cache "$compiler" "$last_bin_dir" 0
+
 else
+
     echo "Неизвестный режим: $1"
     exit 1
+
 fi
