@@ -10,12 +10,12 @@ thread_nums=(1 2 4)
 simple_widthes=(128 256 512 1024 2048 4096 8192 16384 32768 65536 131072)
 bitonic_widthes=(4 5 6 7 8 9 10 11 12 13 14)
 
+last_bin_dir="$(ls -td bin/*/ | head -1)"
+
 ts="$( date +"%d.%m.%Y %H:%M:%S" )"
 bin_dir="bin/$ts $(git rev-parse HEAD)"
 mkdir -p "$bin_dir"
 # echo "" > "$bin_dir/log.txt"
-
-last_bin_dir="$(ls -td bin/*/ | head -1)"
 
 cp "$0" "$bin_dir"
 
@@ -92,10 +92,12 @@ execution (){
     bin_name="$5_$2"
 
     if [ -z "$4" ] || [ ! -f "$4/$bin_name.json" ] || [ ! -f "$4/$bin_name" ]; then
+        echo "Считаю с нуля"
         ../../experiments/bin/simulation "$1" blob/work/ --compiler "$3" -B --run --time 1
         cp "$1" "$bin_dir/${bin_name}.json"
         cp "blob/work/generated_code/bin/simulator" "$bin_dir/$bin_name"
     else
+        echo "Использую кэшированные бинарник и расписание"
         cp "$4/$bin_name" "$bin_dir/$bin_name"
         cp "$4/$bin_name.json" "$bin_dir/$bin_name.json"
     fi
