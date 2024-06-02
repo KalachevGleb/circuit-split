@@ -108,8 +108,6 @@ execution (){
 
     #perf-часть
 
-
-
     for i in $(seq 1 $N); do
         echo "perf $i/$N"
 
@@ -119,10 +117,10 @@ execution (){
         echo "\"cache-misses\" : \"$(echo "$output" | grep "cache-misses" | tr -d ' \n')\"," >> "$bin_dir/$5.txt"
         echo "\"cache-references\" : \"$(echo "$output" | grep "cache-references" | tr -d ' \n')\"," >> "$bin_dir/$5.txt"
         echo "\"l2_rqsts.all_demand_miss\" : \"$(echo "$output" | grep "l2_rqsts.all_demand_miss" | tr -d ' \n')\"," >> "$bin_dir/$5.txt"
-        echo "\"l2_rqsts.all_demand_references\" : \"$(echo "$output" | grep "l2_rqsts.all_demand_references" | tr -d ' \n')\"" >> "$bin_dir/$5.txt"
-        echo "\"cycles\" : \"$(echo "$output" | grep "cycles       " | tr -d ' \n')\"" >> "$bin_dir/$5.txt"
-        echo "\"cycle_activity.cycles_l1d_miss\" : \"$(echo "$output" | grep "cycle_activity.cycles_l1d_miss" | tr -d ' \n')\"" >> "$bin_dir/$5.txt"
-        echo "\"cycle_activity.cycles_l2_miss\" : \"$(echo "$output" | grep "cycle_activity.cycles_l2_miss" | tr -d ' \n')\"" >> "$bin_dir/$5.txt"
+        echo "\"l2_rqsts.all_demand_references\" : \"$(echo "$output" | grep "l2_rqsts.all_demand_references" | tr -d ' \n')\"," >> "$bin_dir/$5.txt"
+        echo "\"cycles\" : \"$(echo "$output" | grep "cycles       " | tr -d ' \n')\"," >> "$bin_dir/$5.txt"
+        echo "\"cycle_activity.cycles_l1d_miss\" : \"$(echo "$output" | grep "cycle_activity.cycles_l1d_miss" | tr -d ' \n')\"," >> "$bin_dir/$5.txt"
+        echo "\"cycle_activity.cycles_l2_miss\" : \"$(echo "$output" | grep "cycle_activity.cycles_l2_miss" | tr -d ' \n')\"," >> "$bin_dir/$5.txt"
         echo "\"cycle_activity.cycles_l3_miss\" : \"$(echo "$output" | grep "cycle_activity.cycles_l3_miss" | tr -d ' \n')\"" >> "$bin_dir/$5.txt"
         echo "}" >> "$bin_dir/$5.txt"
     done
