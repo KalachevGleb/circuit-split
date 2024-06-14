@@ -63,15 +63,30 @@ def run(path):
 
             nprs.append(float(objects[curr_shift + j + 2 + N]['ns_per_read']))
 
+        # to_be_divided_and_meanized = [
+        #     ['cache-misses', 'cache-references'],
+        #     ['l2_rqsts.all_demand_miss', 'l2_rqsts.all_demand_references']
+        # ]
+        # to_be_statsed = [
+        #     'cache-misses',
+        #     'cache-references',
+        #     'l2_rqsts.all_demand_miss',
+        #     'l2_rqsts.all_demand_references'
+        # ]
+
         ratios = dict()
         ratios['mean_of_cache_miss_ratios'] = np.mean(np.array(perfs['cache-misses']) / np.array(perfs['cache-references']))
-        ratios['mean_of_L2_miss_ratios'] = np.mean(np.array(perfs['l2_rqsts.all_demand_miss']) / np.array(perfs['l2_rqsts.all_demand_references']))                          
-
+        ratios['mean_of_L2_miss_ratios'] = np.mean(np.array(perfs['l2_rqsts.all_demand_miss']) / np.array(perfs['l2_rqsts.all_demand_references']))
+                                  
         perfs_ = dict()
         perfs_['промахи ср'], perfs_['промахи ди'] = stats(perfs['cache-misses'])
         perfs_['исп кэша ср'], perfs_['исп кэша ди'] = stats(perfs['cache-references'])
         perfs_['промахи L2 ср'], perfs_['промахи L2 ди'] = stats(perfs['l2_rqsts.all_demand_miss'])
         perfs_['исп L2 ср'], perfs_['исп L2 ди'] = stats(perfs['l2_rqsts.all_demand_references'])
+        perfs_['l1d_miss_cycles_mean'], perfs_['l1d_misses_ci'] = stats(perfs['cycle_activity.cycles_l1d_miss'])
+        perfs_['l2_miss_cycles_mean'], perfs_['l2_misses_ci'] = stats(perfs['cycle_activity.cycles_l2_miss'])
+        perfs_['l3_miss_cycles_mean'], perfs_['l3_misses_ci'] = stats(perfs['cycle_activity.cycles_l3_miss'])
+        perfs_['cycles_mean'], perfs_['cycles_ci'] = stats(perfs['cycles'])
         perfs = perfs_                                        
 
         nprs_mean, nprs_ci = stats(nprs)
