@@ -95,6 +95,9 @@ def run(path):
                                   
         perfs_ = dict()
         for param in params:
+            if param not in perfs:
+                continue
+
             perfs_[param], _ = stats(perfs[param])
         perfs = perfs_                                        
 

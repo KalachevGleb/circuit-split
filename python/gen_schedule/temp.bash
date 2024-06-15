@@ -251,7 +251,7 @@ elif [ "$1" == 'simple_extended' ]; then
         done
     done
 
-elif [ "$1" == 'cache' ]; then
+elif [ "$1" == 'cache_general' ]; then
 
     execution ../gen_graphs/output/bitonic_sort_14_one_thread.json best_bitonic_14 "$compiler" "$last_bin_dir" 0
 
@@ -273,16 +273,14 @@ elif [ "$1" == 'cache' ]; then
     python gen.py 1 1 0 graphs/50k.json cache.json --mode 5 --mem_size 64
     execution cache.json cache_50k "$compiler" "$last_bin_dir" 0
 
-elif [ "$1" == 'cache_bitonic' ]; then
+elif [ "$1" == 'cache_size' ]; then
 
-    execution ../gen_graphs/output/bitonic_sort_14_one_thread.json best_bitonic_14 "$compiler" "$last_bin_dir" 0
-
-    python gen.py 1 1 0 ../gen_graphs/output/bitonic_sort_14.json cut.json --mode 1
-    execution cut.json stock_bitonic_14 "$compiler" "$last_bin_dir" 0
+    python gen.py 1 1 0 graphs/600k.json cut.json --mode 1
+    execution cut.json stock "$compiler" "$last_bin_dir" 0
 
     for mem in 8 128 2048 8192; do
-        python gen.py 1 1 0 ../gen_graphs/output/bitonic_sort_14.json cut.json --mode 5 --mem_size "${mem}"
-        execution cut.json "cache_bitonic_14" "$compiler" "$last_bin_dir" "${mem}"
+        python gen.py 1 1 0 graphs/600k.json cut.json --mode 5 --mem_size "${mem}"
+        execution cut.json cache "$compiler" "$last_bin_dir" "${mem}"
     done
 
 else
