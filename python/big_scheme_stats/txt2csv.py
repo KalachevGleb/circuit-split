@@ -5,7 +5,7 @@ import os
 import pandas as pd
 import numpy as np
 
-N = 50
+N = 30
 ALPHA = 0.05 # N=200
 Q = 1.97196 # N=200
 
