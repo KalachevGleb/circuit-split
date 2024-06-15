@@ -5,7 +5,7 @@ if [ "$( cat /proc/sys/kernel/perf_event_paranoid )" != "-1" ]; then
     sudo sh -c 'echo -1 > /proc/sys/kernel/perf_event_paranoid'
 fi
 
-N=200
+N=50
 thread_nums=(1 2 4)
 simple_widthes=(128 256 512 1024 2048 4096 8192 16384 32768 65536 131072)
 bitonic_widthes=(4 5 6 7 8 9 10 11 12 13 14)
@@ -86,6 +86,13 @@ echo "Используется компилятор $compiler"
 #     echo $json
 # }
 
+function join_by {
+  local d=${1-} f=${2-}
+  if shift 2; then
+    printf %s "$f" "${@/#/$d}"
+  fi
+}
+
 execution (){
     echo "$2"
 
@@ -111,23 +118,30 @@ execution (){
     for i in $(seq 1 $N); do
         echo "perf $i/$N"
 
-        output=$(perf stat -B -e cache-misses,cache-references,l2_rqsts.all_demand_miss,l2_rqsts.all_demand_references,cycles,cycle_activity.cycles_l1d_miss,cycle_activity.cycles_l2_miss,cycle_activity.cycles_l3_miss,L1-dcache-load-misses,cycle_activity.stalls_l1d_miss,cycle_activity.stalls_l2_miss,cycle_activity.stalls_l3_miss,cycle_activity.stalls_mem_any,cycle_activity.cycles_mem_any "./$bin_dir/$bin_name" 1 2>&1)
+        params=(cache-misses cache-references \
+                L1-dcache-load-misses L1-dcache-loads \
+                l2_rqsts.all_demand_miss l2_rqsts.all_demand_references \
+                l2_rqsts.miss l2_rqsts.references \
+                LLC-load-misses LLC-loads \
+                cycles cycle_activity.cycles_l1d_miss cycle_activity.cycles_l2_miss cycle_activity.cycles_l3_miss \
+                cycle_activity.stalls_l1d_miss cycle_activity.stalls_l2_miss cycle_activity.stalls_l3_miss \
+                cycle_activity.cycles_mem_any cycle_activity.stalls_mem_any \
+                l1d_pend_miss.pending l1d_pend_miss.fb_full l1d_pend_miss.pending_cycles l1d_pend_miss.pending_cycles_any)
 
-        echo "{" >> "$bin_dir/$5.txt"
-        echo "\"cache-misses\" : \"$(echo "$output" | grep "cache-misses" | tr -d ' \n')\"," >> "$bin_dir/$5.txt"
-        echo "\"cache-references\" : \"$(echo "$output" | grep "cache-references" | tr -d ' \n')\"," >> "$bin_dir/$5.txt"
-        echo "\"l2_rqsts.all_demand_miss\" : \"$(echo "$output" | grep "l2_rqsts.all_demand_miss" | tr -d ' \n')\"," >> "$bin_dir/$5.txt"
-        echo "\"l2_rqsts.all_demand_references\" : \"$(echo "$output" | grep "l2_rqsts.all_demand_references" | tr -d ' \n')\"," >> "$bin_dir/$5.txt"
-        echo "\"cycles\" : \"$(echo "$output" | grep "cycles       " | tr -d ' \n')\"," >> "$bin_dir/$5.txt"
-        echo "\"cycle_activity.cycles_l1d_miss\" : \"$(echo "$output" | grep "cycle_activity.cycles_l1d_miss" | tr -d ' \n')\"," >> "$bin_dir/$5.txt"
-        echo "\"cycle_activity.cycles_l2_miss\" : \"$(echo "$output" | grep "cycle_activity.cycles_l2_miss" | tr -d ' \n')\"," >> "$bin_dir/$5.txt"
-        echo "\"cycle_activity.cycles_l3_miss\" : \"$(echo "$output" | grep "cycle_activity.cycles_l3_miss" | tr -d ' \n')\"," >> "$bin_dir/$5.txt"
-        echo "\"L1-dcache-load-misses\" : \"$(echo "$output" | grep "L1-dcache-load-misses" | tr -d ' \n')\"," >> "$bin_dir/$5.txt"
-        echo "\"cycle_activity.stalls_l1d_miss\" : \"$(echo "$output" | grep "cycle_activity.stalls_l1d_miss" | tr -d ' \n')\"," >> "$bin_dir/$5.txt"
-        echo "\"cycle_activity.stalls_l2_miss\" : \"$(echo "$output" | grep "cycle_activity.stalls_l2_miss" | tr -d ' \n')\"," >> "$bin_dir/$5.txt"
-        echo "\"cycle_activity.stalls_l3_miss\" : \"$(echo "$output" | grep "cycle_activity.stalls_l3_miss" | tr -d ' \n')\"," >> "$bin_dir/$5.txt"
-        echo "\"cycle_activity.stalls_mem_any\" : \"$(echo "$output" | grep "cycle_activity.stalls_mem_any" | tr -d ' \n')\"," >> "$bin_dir/$5.txt"
-        echo "\"cycle_activity.cycles_mem_any\" : \"$(echo "$output" | grep "cycle_activity.cycles_mem_any" | tr -d ' \n')\"" >> "$bin_dir/$5.txt"
+        output=$(perf stat -B -e "$(join_by , "${params[@]}")" "./$bin_dir/$bin_name" 1 2>&1)
+        
+        echo "{" > "$bin_dir/$5.txt"
+
+        for ((i = 0; i < ${#params[@]}; i++)); do
+        param="${params[$i]}"
+        value=$(echo "$output" | grep "$param" | tr -d ' \n')
+        if [[ $i -lt $((${#params[@]} - 1)) ]]; then
+            echo "\"$param\" : \"$value\"," >> "$bin_dir/$5.txt"
+        else
+            echo "\"$param\" : \"$value\"" >> "$bin_dir/$5.txt"
+        fi
+        done
+
         echo "}" >> "$bin_dir/$5.txt"
     done
 
@@ -239,7 +253,7 @@ elif [ "$1" == 'simple_extended' ]; then
 
 elif [ "$1" == 'cache' ]; then
 
-    execution ../gen_graphs/output/bitonic_sort_14_one_thread.json best_bitonic_14 "$compiler" "$last_bin_dir" 0
+    # execution ../gen_graphs/output/bitonic_sort_14_one_thread.json best_bitonic_14 "$compiler" "$last_bin_dir" 0
 
     python gen.py 1 1 0 ../gen_graphs/output/bitonic_sort_14.json cut.json --mode 1
     execution cut.json stock_bitonic_14 "$compiler" "$last_bin_dir" 0
@@ -247,17 +261,17 @@ elif [ "$1" == 'cache' ]; then
     python gen.py 1 1 0 ../gen_graphs/output/bitonic_sort_14.json cut.json --mode 5 --mem_size 64
     execution cut.json cache_bitonic_14 "$compiler" "$last_bin_dir" 0
 
-    python gen.py 1 1 0 graphs/600k.json stock.json --mode 1
-    execution stock.json stock_600k "$compiler" "$last_bin_dir" 0
+    # python gen.py 1 1 0 graphs/600k.json stock.json --mode 1
+    # execution stock.json stock_600k "$compiler" "$last_bin_dir" 0
 
-    python gen.py 1 1 0 graphs/600k.json cache.json --mode 5 --mem_size 64
-    execution cache.json cache_600k "$compiler" "$last_bin_dir" 0
+    # python gen.py 1 1 0 graphs/600k.json cache.json --mode 5 --mem_size 64
+    # execution cache.json cache_600k "$compiler" "$last_bin_dir" 0
 
-    python gen.py 1 1 0 graphs/50k.json stock.json --mode 1
-    execution stock.json stock_50k "$compiler" "$last_bin_dir" 0
+    # python gen.py 1 1 0 graphs/50k.json stock.json --mode 1
+    # execution stock.json stock_50k "$compiler" "$last_bin_dir" 0
 
-    python gen.py 1 1 0 graphs/50k.json cache.json --mode 5 --mem_size 64
-    execution cache.json cache_50k "$compiler" "$last_bin_dir" 0
+    # python gen.py 1 1 0 graphs/50k.json cache.json --mode 5 --mem_size 64
+    # execution cache.json cache_50k "$compiler" "$last_bin_dir" 0
 
 elif [ "$1" == 'cache_bitonic' ]; then
 
