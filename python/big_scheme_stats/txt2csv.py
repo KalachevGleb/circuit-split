@@ -5,9 +5,9 @@ import os
 import pandas as pd
 import numpy as np
 
-N = 200
-ALPHA = 0.05
-Q = 1.97196
+N = 50
+ALPHA = 0.05 # N=200
+Q = 1.97196 # N=200
 
 def stats(arr):
     mu = np.mean(arr)
@@ -63,31 +63,44 @@ def run(path):
 
             nprs.append(float(objects[curr_shift + j + 2 + N]['ns_per_read']))
 
-        # to_be_divided_and_meanized = [
-        #     ['cache-misses', 'cache-references'],
-        #     ['l2_rqsts.all_demand_miss', 'l2_rqsts.all_demand_references']
-        # ]
-        # to_be_statsed = [
-        #     'cache-misses',
-        #     'cache-references',
-        #     'l2_rqsts.all_demand_miss',
-        #     'l2_rqsts.all_demand_references'
-        # ]
+        params = [
+            "cache-misses",
+            "cache-references",
+            "L1-dcache-load-misses",
+            "L1-dcache-loads",
+            "l2_rqsts.all_demand_miss",
+            "l2_rqsts.all_demand_references",
+            "l2_rqsts.miss",
+            "l2_rqsts.references",
+            "LLC-load-misses",
+            "LLC-loads",
+            "cycles",
+            "cycle_activity.cycles_l1d_miss",
+            "cycle_activity.cycles_l2_miss",
+            "cycle_activity.cycles_l3_miss",
+            "cycle_activity.stalls_l1d_miss",
+            "cycle_activity.stalls_l2_miss",
+            "cycle_activity.stalls_l3_miss",
+            "cycle_activity.cycles_mem_any",
+            "cycle_activity.stalls_mem_any",
+            "l1d_pend_miss.pending",
+            "l1d_pend_miss.fb_full",
+            "l1d_pend_miss.pending_cycles",
+            "l1d_pend_miss.pending_cycles_any"
+        ]
 
         ratios = dict()
-        ratios['mean_of_cache_miss_ratios'] = np.mean(np.array(perfs['cache-misses']) / np.array(perfs['cache-references']))
-        ratios['mean_of_L2_miss_ratios'] = np.mean(np.array(perfs['l2_rqsts.all_demand_miss']) / np.array(perfs['l2_rqsts.all_demand_references']))
+        ratios['средняя доля промахов'] = np.mean(np.array(perfs['cache-misses']) / np.array(perfs['cache-references']))
+        ratios['средняя доля промахов в L2'] = np.mean(np.array(perfs['l2_rqsts.all_demand_miss']) / np.array(perfs['l2_rqsts.all_demand_references']))
                                   
         perfs_ = dict()
-        perfs_['промахи ср'], perfs_['промахи ди'] = stats(perfs['cache-misses'])
-        perfs_['исп кэша ср'], perfs_['исп кэша ди'] = stats(perfs['cache-references'])
-        perfs_['промахи L2 ср'], perfs_['промахи L2 ди'] = stats(perfs['l2_rqsts.all_demand_miss'])
-        perfs_['исп L2 ср'], perfs_['исп L2 ди'] = stats(perfs['l2_rqsts.all_demand_references'])
-        perfs_['l1d_miss_cycles_mean'], perfs_['l1d_misses_ci'] = stats(perfs['cycle_activity.cycles_l1d_miss'])
-        perfs_['l2_miss_cycles_mean'], perfs_['l2_misses_ci'] = stats(perfs['cycle_activity.cycles_l2_miss'])
-        perfs_['l3_miss_cycles_mean'], perfs_['l3_misses_ci'] = stats(perfs['cycle_activity.cycles_l3_miss'])
-        perfs_['cycles_mean'], perfs_['cycles_ci'] = stats(perfs['cycles'])
+        for param in params:
+            perfs_[param], _ = stats(perfs[param])
         perfs = perfs_                                        
+
+        for key in list(perfs.keys()):
+            if key[-2:] in ['ди', 'ci']:
+                del perfs_[key]
 
         nprs_mean, nprs_ci = stats(nprs)
 
