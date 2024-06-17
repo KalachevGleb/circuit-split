@@ -630,7 +630,7 @@ if __name__ == '__main__':
     MODE = args.mode
     SHUFFLE_DEPTH = args.shuffle_layers
     DEPTH_LAYER_VERTEX_CHOICE_METHOD = args.inside_layer_schedule
-    MEM_SIZE = args.mem_size * 1024
+    MEM_SIZE = args.mem_size
 
     # Сообщения
     FRIENDLY = True
