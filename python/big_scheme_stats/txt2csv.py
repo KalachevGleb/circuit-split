@@ -5,7 +5,7 @@ import os
 import pandas as pd
 import numpy as np
 
-N = 30
+N = 200
 ALPHA = 0.05 # N=200
 Q = 1.97196 # N=200
 
@@ -90,8 +90,8 @@ def run(path):
         ]
 
         ratios = dict()
-        ratios['средняя доля промахов'] = np.mean(np.array(perfs['cache-misses']) / np.array(perfs['cache-references']))
-        ratios['средняя доля промахов в L2'] = np.mean(np.array(perfs['l2_rqsts.all_demand_miss']) / np.array(perfs['l2_rqsts.all_demand_references']))
+        ratios['mean_of_cache_miss_ratios'] = np.mean(np.array(perfs['cache-misses']) / np.array(perfs['cache-references']))
+        ratios['mean_of_L2_miss_ratios'] = np.mean(np.array(perfs['l2_rqsts.all_demand_miss']) / np.array(perfs['l2_rqsts.all_demand_references']))
                                   
         perfs_ = dict()
         for param in params:
