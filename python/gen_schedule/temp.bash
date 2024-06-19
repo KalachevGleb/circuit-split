@@ -5,9 +5,11 @@ if [ "$( cat /proc/sys/kernel/perf_event_paranoid )" != "-1" ]; then
     sudo sh -c 'echo -1 > /proc/sys/kernel/perf_event_paranoid'
 fi
 
-N=30
+ONLY_BUILD=0
+
+N=100
 thread_nums=(1 2 4)
-simple_widthes=(128 256 512 1024 2048 4096 8192 16384 32768 65536 131072)
+simple_widthes=(1024 2048 4096 8192 16384 32768 65536 131072)
 bitonic_widthes=(4 5 6 7 8 9 10 11 12 13 14)
 
 last_bin_dir="$(ls -td bin/*/ | head -1)"
@@ -96,7 +98,7 @@ function join_by {
 execution (){
     echo "$2"
 
-    bin_name="$5_$2"
+    bin_name="${2}_${5}"
 
     if [ -z "$4" ] || [ ! -f "$4/$bin_name.json" ] || [ ! -f "$4/$bin_name" ]; then
         echo "Считаю с нуля"
@@ -109,9 +111,14 @@ execution (){
         cp "$4/$bin_name.json" "$bin_dir/$bin_name.json"
     fi
 
+    if [ $ONLY_BUILD == 1 ]; then
+        echo "Произведена только компиляция"
+        return
+    fi
+
     echo "\"$2\"" >> "$bin_dir/$5.txt"
     
-    echo "$(python gen.py 100 1 0 "$1" /dev/null --mode 4)" >> "$bin_dir/$5.txt"
+    echo "$(python gen.py 100 1 0 "$bin_dir/$bin_name.json" /dev/null --mode 4)" >> "$bin_dir/$5.txt"
 
     #perf-часть
 
@@ -151,22 +158,36 @@ execution (){
     done
 }
 
-if [ "$1" == "real" ]; then
+if [ "$1" == "50k" ]; then
 
     python gen.py 1 1 0 "./graphs/50k.json" cut.json --mode 1
-    execution  cut.json real_1_dummy "$compiler" "$last_bin_dir" 50
+    execution  cut.json 50k_1_dummy "$compiler" "$last_bin_dir" 50
 
     for threads in "${thread_nums[@]}"; do
         python gen.py ${threads} 1 0 ."/graphs/50k.json cut.json" --mode 3 --shuffle_layers False --inside_layer_schedule backpack
-        execution cut.json real_${threads}_depth "$compiler" "$last_bin_dir" 50
+        execution cut.json 50k_${threads}_depth "$compiler" "$last_bin_dir" 50
     done
 
+elif [ "$1" == "600k" ]; then
+
     python gen.py 1 1 0 "./graphs/600k.json" cut.json --mode 1
-    execution  cut.json real_1_dummy "$compiler" "$last_bin_dir" 600
+    execution  cut.json 600k_1_dummy "$compiler" "$last_bin_dir" 600
 
     for threads in "${thread_nums[@]}"; do
         python gen.py ${threads} 1 0 "./graphs/600k.json" cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
-        execution cut.json real_${threads}_depth "$compiler" "$last_bin_dir" 600
+        execution cut.json 600k_${threads}_depth "$compiler" "$last_bin_dir" 600
+    done
+
+elif [ "$1" == "simple8192" ]; then
+
+    python gen.py 1 1 0 "./graphs/simple_circuit_n8192_d20_th1.json" cut.json --mode 1
+    execution  cut.json simple8192_1_dummy "$compiler" "$last_bin_dir" 0
+
+    for threads in "${thread_nums[@]}"; do
+        python gen.py ${threads} 1 0 "./graphs/simple_circuit_n8192_d20_th${threads}.json" cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
+        execution cut.json simple8192_${threads}_depth "$compiler" "$last_bin_dir" 0
+
+        execution "./graphs/simple_circuit_n8192_d20_th${threads}.json" simple8192_${threads}_stock "$compiler" "$last_bin_dir" 0
     done
 
 elif [ "$1" == "real_extended" ]; then
@@ -203,11 +224,11 @@ elif [ "$1" == 'bitonic' ]; then
 
     for width in "${bitonic_widthes[@]}"; do
         echo $width
-        execution ../gen_graphs/output/bitonic_sort_${width}_one_thread.json bitonic_1_stock "$compiler" "$last_bin_dir" "$width"
+        execution ../gen_graphs/output/bitonic_sort_${width}_one_thread.json 1_stock "$compiler" "$last_bin_dir" "$width"
         
         for threads in "${thread_nums[@]}"; do
             python gen.py ${threads} 1 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
-            execution cut.json bitonic_${threads}_depth "$compiler" "$last_bin_dir" "$width"
+            execution cut.json ${threads}_depth "$compiler" "$last_bin_dir" "$width"
         done
     done
 
@@ -225,6 +246,19 @@ elif [ "$1" == 'simple' ]; then
             
             python gen.py ${threads} 1 0 ../gen_graphs/output/simple_circuit_n${width}_d${depth}_th${threads}.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
             execution cut.json simpled${depth}_${threads}_depth "$compiler" "$last_bin_dir" "$width"
+        done
+    done
+
+elif [ "$1" == 'simpled20' ]; then
+
+    depth=20
+
+    for width in "${simple_widthes[@]}"; do
+        for threads in "${thread_nums[@]}"; do
+            execution ../gen_graphs/output/simple_circuit_n${width}_d${depth}_th${threads}.json ${threads}_stock "$compiler" "$last_bin_dir" "$width"
+            
+            python gen.py ${threads} 1 0 ../gen_graphs/output/simple_circuit_n${width}_d${depth}_th${threads}.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
+            execution cut.json ${threads}_depth "$compiler" "$last_bin_dir" "$width"
         done
     done
 
@@ -273,13 +307,34 @@ elif [ "$1" == 'cache_general' ]; then
     python gen.py 1 1 0 graphs/50k.json cache.json --mode 5 --mem_size 64
     execution cache.json cache_50k "$compiler" "$last_bin_dir" 0
 
-elif [ "$1" == 'cache_size' ]; then
+elif [ "$1" == 'cache_size_50k' ]; then
+
+    python gen.py 1 1 0 graphs/50k.json cut.json --mode 1
+    execution cut.json stock "$compiler" "$last_bin_dir" 0
+
+    for mem in 256 1024 16384; do
+        python gen.py 1 1 0 graphs/50k.json cut.json --mode 5 --mem_size "${mem}"
+        execution cut.json cache "$compiler" "$last_bin_dir" "${mem}"
+    done
+
+
+elif [ "$1" == 'cache_size_600k' ]; then
 
     python gen.py 1 1 0 graphs/600k.json cut.json --mode 1
     execution cut.json stock "$compiler" "$last_bin_dir" 0
 
-    for mem in 8 128 2048 8192; do
+    for mem in 65536 262144 1048576; do
         python gen.py 1 1 0 graphs/600k.json cut.json --mode 5 --mem_size "${mem}"
+        execution cut.json cache "$compiler" "$last_bin_dir" "${mem}"
+    done
+
+elif [ "$1" == 'cache_size_bitonic12' ]; then
+
+    python gen.py 1 1 0 graphs/bitonic12.json cut.json --mode 1
+    execution cut.json stock "$compiler" "$last_bin_dir" 0
+
+    for mem in 256 1024 16384; do
+        python gen.py 1 1 0 graphs/bitonic12.json cut.json --mode 5 --mem_size "${mem}"
         execution cut.json cache "$compiler" "$last_bin_dir" "${mem}"
     done
 
