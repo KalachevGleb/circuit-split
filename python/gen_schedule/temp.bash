@@ -190,7 +190,7 @@ elif [ "$1" == "simple8192" ]; then
         execution "./graphs/simple_circuit_n8192_d20_th${threads}.json" simple8192_${threads}_stock "$compiler" "$last_bin_dir" 0
     done
 
-elif [ "$1" == "real_extended" ]; then
+elif [ "$1" == "real_extended_50k" ]; then
 
     python gen.py 1 1 0 "./graphs/50k.json" cut.json --mode 1
     execution  cut.json real_1_dummy "$compiler" "$last_bin_dir" 50
@@ -205,6 +205,8 @@ elif [ "$1" == "real_extended" ]; then
         python gen.py ${threads} 1 0 ."/graphs/50k.json cut.json" --mode 3 --shuffle_layers True --inside_layer_schedule dummy
         execution cut.json real_${threads}_depthshufdummy "$compiler" "$last_bin_dir" 50
     done
+
+elif [ "$1" == "real_extended_600k" ]; then
 
     python gen.py 1 1 0 "./graphs/600k.json" cut.json --mode 1
     execution  cut.json real_1_dummy "$compiler" "$last_bin_dir" 600
