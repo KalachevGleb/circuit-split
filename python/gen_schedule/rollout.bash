@@ -188,16 +188,16 @@ elif [ "$1" == "600k" ]; then
 elif [ "$1" == "extended_50k" ]; then
 
     python gen.py 1 1 0 "./graphs/50k.json" cut.json --mode 1
-    execution  cut.json real_1_dummy "$default_compiler" "$last_bin_dir" 50
+    execution  cut.json real_1_dummy "$default_compiler" "$last_bin_dir"
 
     for threads in "${thread_nums[@]}"; do
-        python gen.py ${threads} 1 0 ."/graphs/50k.json cut.json" --mode 3 --shuffle_layers False --inside_layer_schedule backpack
+        python gen.py ${threads} 1 0 ."/graphs/50k.json cut.json" cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
         execution cut.json real_${threads}_depth "$default_compiler" "$last_bin_dir"
-        python gen.py ${threads} 1 0 ."/graphs/50k.json cut.json" --mode 3 --shuffle_layers False --inside_layer_schedule dummy
+        python gen.py ${threads} 1 0 ."/graphs/50k.json cut.json" cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
         execution cut.json real_${threads}_depthdummy "$default_compiler" "$last_bin_dir"
-        python gen.py ${threads} 1 0 ."/graphs/50k.json cut.json" --mode 3 --shuffle_layers True --inside_layer_schedule backpack
+        python gen.py ${threads} 1 0 ."/graphs/50k.json cut.json" cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
         execution cut.json real_${threads}_depthshuf "$default_compiler" "$last_bin_dir"
-        python gen.py ${threads} 1 0 ."/graphs/50k.json cut.json" --mode 3 --shuffle_layers True --inside_layer_schedule dummy
+        python gen.py ${threads} 1 0 ."/graphs/50k.json cut.json" cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
         execution cut.json real_${threads}_depthshufdummy "$default_compiler" "$last_bin_dir"
     done
 
@@ -207,13 +207,13 @@ elif [ "$1" == "extended_600k" ]; then
     execution  cut.json real_1_dummy "$default_compiler" "$last_bin_dir" 600
 
     for threads in "${thread_nums[@]}"; do
-        python gen.py ${threads} 1 0 ."/graphs/600k.json cut.json" --mode 3 --shuffle_layers False --inside_layer_schedule backpack
+        python gen.py ${threads} 1 0 ."/graphs/600k.json cut.json" cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
         execution cut.json real_${threads}_depth "$default_compiler" "$last_bin_dir"
-        python gen.py ${threads} 1 0 ."/graphs/600k.json cut.json" --mode 3 --shuffle_layers False --inside_layer_schedule dummy
+        python gen.py ${threads} 1 0 ."/graphs/600k.json cut.json" cut.json --mode 3 --shuffle_layers False --inside_layer_schedule dummy
         execution cut.json real_${threads}_depthdummy "$default_compiler" "$last_bin_dir"
-        python gen.py ${threads} 1 0 ."/graphs/600k.json cut.json" --mode 3 --shuffle_layers True --inside_layer_schedule backpack
+        python gen.py ${threads} 1 0 ."/graphs/600k.json cut.json" cut.json --mode 3 --shuffle_layers True --inside_layer_schedule backpack
         execution cut.json real_${threads}_depthshuf "$default_compiler" "$last_bin_dir"
-        python gen.py ${threads} 1 0 ."/graphs/600k.json cut.json" --mode 3 --shuffle_layers True --inside_layer_schedule dummy
+        python gen.py ${threads} 1 0 ."/graphs/600k.json cut.json" cut.json --mode 3 --shuffle_layers True --inside_layer_schedule dummy
         execution cut.json real_${threads}_depthshufdummy "$default_compiler" "$last_bin_dir"
     done
 
