@@ -171,7 +171,7 @@ int Layer::step() {
 
             if(_curr_min > _max_score) {
                 _curr_min = _max_score;
-                
+            
                 break;
             }
         }
@@ -250,18 +250,66 @@ int Layer::step() {
             continue;
         }
 
-        Graph::Vertex* vertex = _id2node[recalc_id] -> vertex;
+        LayerNode* node = _id2node[recalc_id];
+        Graph::Vertex* vertex = node -> vertex;
 
-        int score = 0;
+        int new_score = 0;
         if(!_cache -> contains(vertex -> id)) {
-            score += vertex -> weight;
+            new_score += vertex -> weight;
         }
         for(Graph::Vertex* parent: vertex->parents) {
             if(!_cache -> contains(parent -> id)) {
-                score += parent -> weight;
+                new_score += parent -> weight;
             }
         }
-        vertex -> score = score;
+        
+        if(new_score == vertex -> score) {
+            continue;
+        }
+
+        if(node -> prev == nullptr && node -> next == nullptr) {
+            _lists[vertex -> score] = nullptr;
+        }
+        else if(node -> prev == nullptr && node -> next != nullptr) {
+            node -> next -> prev = nullptr;
+            _lists[vertex -> score] = node -> next;
+        }
+        else if(node -> prev != nullptr && node -> next) {
+            node -> prev -> next = nullptr;
+        }
+        else {
+            node -> prev -> next = node -> next;
+            node -> next -> prev = node -> prev;
+        }
+
+        if(_lists[new_score] == nullptr) {
+            node -> prev = nullptr;
+            node -> next = nullptr;
+             _lists[new_score] = node;
+        }
+        else {
+            node -> prev = nullptr;
+            node -> next = _lists[new_score];
+            _lists[new_score] -> prev = node;
+            _lists[new_score] = node;
+        }
+
+        if(new_score < _curr_min) {
+            _curr_min = new_score;
+        }
+        else if(_lists[_curr_min] == nullptr) {
+            while(_lists[_curr_min] == nullptr) {
+                ++_curr_min;
+
+                if(_curr_min > _max_score) {
+                    _curr_min = _max_score;  
+                          
+                    break;
+                }
+            }
+        }
+
+        vertex -> score = new_score;
     }
 
     return id;
