@@ -8,11 +8,16 @@
 
 using namespace std;
 
+#define BOXPLUS_DEBUG_LINE 8
+#define DEBUG_LINE(LINE_NUM, ARRAY) if (BOXPLUS_DEBUG_LINE == (LINE_NUM)) print_array((ARRAY));
+#define DEBUG_LINE_EXACT(LINE_NUM, VAL) if (BOXPLUS_DEBUG_LINE == (LINE_NUM)) cout << uint32_t((VAL)) << " ";
+#define DEBUG_LINE_EXACT_STOP() cout << endl;
+
 const int RUN_COUNT = 100000;
 const int WIDTH = 5;
 const int ARRAY_LEN = 72;
-
 const int PADDED_LEN = ARRAY_LEN % 32 == 0 ? ARRAY_LEN / 32 : ARRAY_LEN / 32 + 1;
+const int SEED = 42;
 
 template<class T>
 const T WIDTH_MASK = ~((~T(0)) << (WIDTH));
@@ -25,6 +30,16 @@ template<class T>
 void print_array(const T* arr) {
     for(int i = 0; i < ARRAY_LEN; ++i) {
         cout << ((sizeof(T) <= 4) ? uint32_t(arr[i]) : arr[i]) << " ";
+    }
+    cout << endl;
+}
+
+template<>
+void print_array(const __m256i* arr) {
+    uint8_t buff[ARRAY_LEN];
+    memcpy(buff, arr, ARRAY_LEN);
+    for(int i = 0; i < ARRAY_LEN; ++i) {
+        cout << uint32_t(buff[i]) << " ";
     }
     cout << endl;
 }
@@ -55,9 +70,10 @@ __m256i overflow(__m256i x) {
 }
 
 template<class T>
-void simple(const T* X_in, const T* Y_in, T* Z) {
+void simple(const T* X_in, const T* Y_in, T* Z_out) {
     T X[ARRAY_LEN];
     T Y[ARRAY_LEN];
+    T Z[ARRAY_LEN];
     T M[ARRAY_LEN];
     T R[ARRAY_LEN];
     T T1[ARRAY_LEN];
@@ -66,6 +82,8 @@ void simple(const T* X_in, const T* Y_in, T* Z) {
     T Temp2[ARRAY_LEN];
     T Temp3[ARRAY_LEN];
 
+    // Инициализация памяти
+
     memcpy(X, X_in, sizeof(T) * ARRAY_LEN);
     memcpy(Y, Y_in, sizeof(T) * ARRAY_LEN);
     for(int i = 0; i < ARRAY_LEN; ++i) {
@@ -73,67 +91,56 @@ void simple(const T* X_in, const T* Y_in, T* Z) {
         Y[i] &= WIDTH_MASK<T>;
     }
 
+    // Вычисления
+
     for(int i = 0; i < ARRAY_LEN; ++i) {
         M[i] = X[i] > Y[i] ? Y[i] : X[i];
     }
-
-    // print_array(static_cast<T*>(M));
+    DEBUG_LINE(1, M)
 
     for(int i = 0; i < ARRAY_LEN; ++i) {
-        // Тут не возникнет переполнение из-за того, что
-        // из большего вычитается меньшее
-        // но это тяжело будет проверять автоматически
-        // поэтому все равно я применяю маску
-
         R[i] = X[i] > Y[i] ? X[i] - Y[i] : Y[i] - X[i];
         R[i] = overflow(R[i]);
     }
-
-    // print_array(static_cast<T*>(R));
+    DEBUG_LINE(2, R)
 
     for(int i = 0; i < ARRAY_LEN; ++i) {
         T1[i] = M[i] < T(4) ? M[i] + T(4) : T(8);
         T1[i] = overflow(T1[i]);
     }
-
-    // print_array(static_cast<T*>(T1));
+    DEBUG_LINE(3, T1)
 
     for(int i = 0; i < ARRAY_LEN; ++i) {
         T2[i] = T1[i] - T(5);
         T2[i] = overflow(T2[i]);
     }
-
-    print_array(static_cast<T*>(T2));
+    DEBUG_LINE(4, T2)
 
     for(int i = 0; i < ARRAY_LEN; ++i) {
         Temp1[i] = R[i] < T1[i] ? T(1) : T(0);
     }
-
-    // print_array(static_cast<T*>(Temp1));
+    DEBUG_LINE(5, Temp1)
 
     for(int i = 0; i < ARRAY_LEN; ++i) {
         Temp2[i] = R[i] < T2[i] ? T(2) : T(1);
     }
-
-    // print_array(static_cast<T*>(Temp2));
+    DEBUG_LINE(6, Temp2)
 
     for(int i = 0; i < ARRAY_LEN; ++i) {
         Temp3[i] = Temp2[i] & Temp1[i];
     }
-
-    // print_array(static_cast<T*>(Temp3));
+    DEBUG_LINE(7, Temp3)
 
     for(int i = 0; i < ARRAY_LEN; ++i) {
-        // Тут не возникнет переполнение из-за того, что
-        // из боьлшего вычитается меньшее
-        // но это тяжело будет проверять автоматически
-        // поэтому все равно я применяю маску
-
         Z[i] = M[i] - (Temp3[i] < M[i] ? Temp3[i] : M[i]);
         Z[i] = overflow(Z[i]);
     }
+    DEBUG_LINE(8, Z)
 
-    // print_array(static_cast<T*>(Z));
+    // Возврат
+
+    memcpy(Z_out, Z, sizeof(T) * ARRAY_LEN);
+
 }
 
 void no_pack_8(const uint8_t* X_in, const uint8_t* Y_in, uint8_t* Z_out) {
@@ -166,24 +173,16 @@ void no_pack_8(const uint8_t* X_in, const uint8_t* Y_in, uint8_t* Z_out) {
         __m256i cmp_value = _mm256_cmpgt_epi8(X[i], Y[i]);
         M[i] = _mm256_blendv_epi8(X[i], Y[i], cmp_value);
     }
-
-    // memcpy(buff, M, ARRAY_LEN);
-    // print_array(buff);
+    DEBUG_LINE(1, M)
 
     for(int i = 0; i < PADDED_LEN; ++i) {
-        // Тут не возникнет переполнение из-за того, что
-        // из боьлшего вычитается меньшее
-        // но это тяжело будет проверять автоматически
-        // поэтому все равно я применяю маску
         __m256i cmp_value = _mm256_cmpgt_epi8(X[i], Y[i]);
         __m256i x_sub_y = _mm256_sub_epi8(X[i], Y[i]);
         __m256i y_sub_x = _mm256_sub_epi8(Y[i], X[i]);
         R[i] = _mm256_blendv_epi8(y_sub_x, x_sub_y, cmp_value);
         R[i] = overflow(R[i]);
     }
-
-    // memcpy(buff, R, ARRAY_LEN);
-    // print_array(buff);
+    DEBUG_LINE(2, R)
 
     for(int i = 0; i < PADDED_LEN; ++i) {
         __m256i four = _mm256_set1_epi8(4);
@@ -194,9 +193,7 @@ void no_pack_8(const uint8_t* X_in, const uint8_t* Y_in, uint8_t* Z_out) {
         T1[i] = _mm256_blendv_epi8(m_plus_four, eight, cmp_value);
         T1[i] = overflow(T1[i]);
     }
-
-    // memcpy(buff, T1, ARRAY_LEN);
-    // print_array(buff);
+    DEBUG_LINE(3, T1)
 
     for(int i = 0; i < PADDED_LEN; ++i) {
         __m256i five = _mm256_set1_epi8(5);
@@ -205,9 +202,7 @@ void no_pack_8(const uint8_t* X_in, const uint8_t* Y_in, uint8_t* Z_out) {
         T2[i] = _mm256_sub_epi8(T1[i], five);
         T2[i] = overflow(T2[i]);
     }
-
-    memcpy(buff, T2, ARRAY_LEN);
-    print_array(buff);
+    DEBUG_LINE(4, T2)
 
     for(int i = 0; i < PADDED_LEN; ++i) {
         __m256i zero = _mm256_set1_epi8(0);
@@ -216,9 +211,7 @@ void no_pack_8(const uint8_t* X_in, const uint8_t* Y_in, uint8_t* Z_out) {
         __m256i cmp_value = _mm256_cmpgt_epi8(T1[i], R[i]);
         Temp1[i] = _mm256_blendv_epi8(zero, one, cmp_value);
     }
-
-    // memcpy(buff, Temp1, ARRAY_LEN);
-    // print_array(buff);
+    DEBUG_LINE(5, Temp1)
 
     for(int i = 0; i < PADDED_LEN; ++i) {
         __m256i one = _mm256_set1_epi8(1);
@@ -227,34 +220,23 @@ void no_pack_8(const uint8_t* X_in, const uint8_t* Y_in, uint8_t* Z_out) {
         __m256i cmp_value = _mm256_cmpgt_epi8(T2[i], R[i]);
         Temp2[i] = _mm256_blendv_epi8(one, two, cmp_value);
     }
-
-    // memcpy(buff, Temp2, ARRAY_LEN);
-    // print_array(buff);
+    DEBUG_LINE(6, Temp2)
 
     for(int i = 0; i < PADDED_LEN; ++i) {
         Temp3[i] = _mm256_and_si256(Temp2[i], Temp1[i]);
     }
-
-    // memcpy(buff, Temp3, ARRAY_LEN);
-    // print_array(buff);
+    DEBUG_LINE(7, Temp3)
 
     for(int i = 0; i < PADDED_LEN; ++i) {
-        // Тут не возникнет переполнение из-за того, что
-        // из боьлшего вычитается меньшее
-        // но это тяжело будет проверять автоматически
-        // поэтому все равно я применяю маску
-
         // Переполнение!
         __m256i cmp_value = _mm256_cmpgt_epi8(M[i], Temp3[i]);
         __m256i buff = _mm256_blendv_epi8(M[i], Temp3[i], cmp_value);
         buff = _mm256_sub_epi8(M[i], buff);
         Z[i] = _mm256_and_si256(buff, width_mask);
     }
+    DEBUG_LINE(8, Z)
 
-    // memcpy(buff, Z, ARRAY_LEN);
-    // print_array(buff);
-
-    // memcpy(Z_out, Z, ARRAY_LEN);
+    memcpy(Z_out, Z, ARRAY_LEN);
 }
 
 template <class T>
@@ -287,11 +269,13 @@ void BoxPlus(T x, T y, T* z) {
 
 template<class T>
 void test_on_data(JobFunc<T> f) {
+    srand(SEED);
+
     vector<T> X(ARRAY_LEN);
     vector<T> Y(ARRAY_LEN);
     for(int i = 0; i < ARRAY_LEN; ++i) {
-        X[i] = i % (2 << WIDTH);
-        Y[i] = (2 << WIDTH) - X[i] - 1;
+        X[i] = rand() % 32; // i % (1 << WIDTH);
+        Y[i] = rand() % 32; // (1 << WIDTH) - X[i] - 1;
     }
 
     if(f == nullptr) {
@@ -301,34 +285,34 @@ void test_on_data(JobFunc<T> f) {
             T y = Y[i];
 
             T m = std::min(x, y);
-            // cout << ((sizeof(T) <= 4) ? static_cast<uint32_t>(m) : m) << " "; continue;
+            DEBUG_LINE_EXACT(1, m)
 
             T r = std::abs(x - y);
             r = overflow(r);
-            // cout << ((sizeof(T) <= 4) ? static_cast<uint32_t>(r) : r) << " "; continue;
+            DEBUG_LINE_EXACT(2, r)
 
             T t1 = std::min(m + 4, 8);
             t1 = overflow(t1);
-            // cout << ((sizeof(T) <= 4) ? static_cast<uint32_t>(t1) : t1) << " "; continue;
+            DEBUG_LINE_EXACT(3, t1)
 
             T t2 = t1 - 5;
             t2 = overflow(t2);
-            cout << ((sizeof(T) <= 4) ? static_cast<uint32_t>(t2) : t2) << " "; continue;
+            DEBUG_LINE_EXACT(4, t2)
 
             int Temp1 = (r < t1) ? 1 : 0;
-            // cout << ((sizeof(T) <= 4) ? static_cast<uint32_t>(Temp1) : Temp1) << " "; continue;
+            DEBUG_LINE_EXACT(5, Temp1)
 
             int Temp2 = r >= t2 ? 1 : 2;
-            // cout << ((sizeof(T) <= 4) ? static_cast<uint32_t>(Temp2) : Temp2) << " "; continue;
+            DEBUG_LINE_EXACT(6, Temp2)
 
             int Temp3 = Temp1 & Temp2;
-            // cout << ((sizeof(T) <= 4) ? static_cast<uint32_t>(Temp3) : Temp3) << " "; continue;
+            DEBUG_LINE_EXACT(7, Temp3)
 
             int z = std::max(0, m - Temp3);
             z = overflow(z);
-            // cout << ((sizeof(T) <= 4) ? static_cast<uint32_t>(z) : z) << " "; continue;
+            DEBUG_LINE_EXACT(8, z)
         }
-        cout << endl;
+        DEBUG_LINE_EXACT_STOP()
     }
     else {
         vector<T> Z(ARRAY_LEN);
@@ -352,12 +336,13 @@ int main(int argc, char** argv) {
     }
 
     if(test_number == -1) {
-        test_on_data<int8_t>(nullptr);
+        printf("Тест на синтетических данных\n");
+        test_on_data<uint8_t>(nullptr);
         test_on_data<uint8_t>(simple<uint8_t>);
         test_on_data<uint8_t>(no_pack_8);
     }
     else if(test_number == 0) {
-        printf("Тесты с плотной упаковкой\n\n");
+        printf("Тест без векторных инструкций:\n\n");
         printf("uint8_t: %lfнс\n", measure_time<uint8_t>(simple<uint8_t>));
         printf("uint16_t: %lfнс\n", measure_time<uint16_t>(simple<uint16_t>));
         printf("uint32_t: %lfнс\n", measure_time<uint32_t>(simple<uint32_t>));
@@ -365,18 +350,18 @@ int main(int argc, char** argv) {
 
         printf("\n\n");
 
-        printf("Выбран тест без укаповки с векторными инструкциями и б. Слово 8 бит, ширина провода не более 7 бит.\n\n");
+        printf("Тест без укаповки с векторными инструкциями. Слово 8 бит, ширина провода %d.\n\n", WIDTH);
         printf("Среднее время: %lfнс\n", measure_time<uint8_t>(no_pack_8));
     }
     else if(test_number == 1) {
-        printf("Выбран тест с плотной упаковкой\n\n");
+        printf("Тест без векторных инструкций:\n\n");
         printf("uint8_t: %lfнс\n", measure_time<uint8_t>(simple<uint8_t>));
         printf("uint16_t: %lfнс\n", measure_time<uint16_t>(simple<uint16_t>));
         printf("uint32_t: %lfнс\n", measure_time<uint32_t>(simple<uint32_t>));
         printf("uint64_t: %lfнс\n", measure_time<uint64_t>(simple<uint64_t>));
     }
     else if(test_number == 2) {
-        printf("Выбран тест без укаповки с векторными инструкциями и б. Слово 8 бит, ширина провода не более 7 бит.\n\n");
+        printf("Тест без укаповки с векторными инструкциями. Слово 8 бит, ширина провода %d.\n\n", WIDTH);
         printf("Среднее время: %lfнс\n", measure_time<uint8_t>(no_pack_8));
     }
     else {
