@@ -8,20 +8,22 @@
 
 using namespace std;
 
-#define BOXPLUS_DEBUG_LINE 8
+#define BOXPLUS_DEBUG_LINE 0
 #define DEBUG_LINE(LINE_NUM, ARRAY) if (BOXPLUS_DEBUG_LINE == (LINE_NUM)) print_array((ARRAY));
 #define DEBUG_LINE_EXACT(LINE_NUM, VAL) if (BOXPLUS_DEBUG_LINE == (LINE_NUM)) cout << uint32_t((VAL)) << " ";
 #define DEBUG_LINE_EXACT_STOP() cout << endl;
 
-const int RUN_COUNT = 100000;
+const int RUN_COUNT = 10000000;
 const int WIDTH = 5;
-const int ARRAY_LEN = 72;
+const int ARRAY_LEN = 640;
 const int PADDED_LEN = ARRAY_LEN % 32 == 0 ? ARRAY_LEN / 32 : ARRAY_LEN / 32 + 1;
 const int SEED = 42;
 
 template<class T>
 const T WIDTH_MASK = ~((~T(0)) << (WIDTH));
+#ifdef VEC_ON
 const __m256i width_mask = _mm256_set1_epi8(WIDTH_MASK<uint8_t>);
+#endif
 
 template<class T>
 using JobFunc = void(*)(const T*, const T*, T*);
@@ -34,6 +36,7 @@ void print_array(const T* arr) {
     cout << endl;
 }
 
+#ifdef VEC_ON
 template<>
 void print_array(const __m256i* arr) {
     uint8_t buff[ARRAY_LEN];
@@ -43,17 +46,19 @@ void print_array(const __m256i* arr) {
     }
     cout << endl;
 }
+#endif
 
 template<class T>
-T overflow(T x) {
+inline T overflow(T x) {
     if(x < -(1 << (WIDTH - 1))) x += 1 << WIDTH;
     else if(x >= ((1 << WIDTH - 1) - 1)) x -= 1 << WIDTH;
     x &= WIDTH_MASK<T>;
     return x;
 }
 
+#ifdef VEC_ON
 template<>
-__m256i overflow(__m256i x) {
+inline __m256i overflow(__m256i x) {
     const __m256i low = _mm256_set1_epi8(int8_t(-(1 << (WIDTH - 1))));
     const __m256i high = _mm256_set1_epi8(int8_t((1 << (WIDTH - 1)) - 1));
     const __m256i mod = _mm256_set1_epi8(int8_t(1 << WIDTH));
@@ -68,6 +73,7 @@ __m256i overflow(__m256i x) {
 
     return x;
 }
+#endif
 
 template<class T>
 void simple(const T* X_in, const T* Y_in, T* Z_out) {
@@ -143,6 +149,7 @@ void simple(const T* X_in, const T* Y_in, T* Z_out) {
 
 }
 
+#ifdef VEC_ON
 void no_pack_8(const uint8_t* X_in, const uint8_t* Y_in, uint8_t* Z_out) {
     if(WIDTH > 7) {
         printf("WIDTH > 7\n");
@@ -238,6 +245,7 @@ void no_pack_8(const uint8_t* X_in, const uint8_t* Y_in, uint8_t* Z_out) {
 
     memcpy(Z_out, Z, ARRAY_LEN);
 }
+#endif
 
 template <class T>
 double measure_time(JobFunc<T> f) {
@@ -339,7 +347,9 @@ int main(int argc, char** argv) {
         printf("Тест на синтетических данных\n");
         test_on_data<uint8_t>(nullptr);
         test_on_data<uint8_t>(simple<uint8_t>);
+        #ifdef VEC_ON
         test_on_data<uint8_t>(no_pack_8);
+        #endif
     }
     else if(test_number == 0) {
         printf("Тест без векторных инструкций:\n\n");
@@ -350,8 +360,10 @@ int main(int argc, char** argv) {
 
         printf("\n\n");
 
+        #ifdef VEC_ON
         printf("Тест без укаповки с векторными инструкциями. Слово 8 бит, ширина провода %d.\n\n", WIDTH);
         printf("Среднее время: %lfнс\n", measure_time<uint8_t>(no_pack_8));
+        #endif
     }
     else if(test_number == 1) {
         printf("Тест без векторных инструкций:\n\n");
@@ -360,10 +372,12 @@ int main(int argc, char** argv) {
         printf("uint32_t: %lfнс\n", measure_time<uint32_t>(simple<uint32_t>));
         printf("uint64_t: %lfнс\n", measure_time<uint64_t>(simple<uint64_t>));
     }
+    #ifdef VEC_ON
     else if(test_number == 2) {
         printf("Тест без укаповки с векторными инструкциями. Слово 8 бит, ширина провода %d.\n\n", WIDTH);
         printf("Среднее время: %lfнс\n", measure_time<uint8_t>(no_pack_8));
     }
+    #endif
     else {
         cout << "Плохой номер теста: " << test_number << endl;
         exit(-1);
