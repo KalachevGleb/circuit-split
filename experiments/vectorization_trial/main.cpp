@@ -13,9 +13,9 @@ using namespace std;
 #define DEBUG_LINE_EXACT(LINE_NUM, VAL) if (BOXPLUS_DEBUG_LINE == (LINE_NUM)) cout << uint32_t((VAL)) << " ";
 #define DEBUG_LINE_EXACT_STOP() cout << endl;
 
-const int RUN_COUNT = 10000000;
+const int RUN_COUNT = 100000;
 const int WIDTH = 5;
-const int ARRAY_LEN = 640;
+const int ARRAY_LEN = 4096;
 const int PADDED_LEN = ARRAY_LEN % 32 == 0 ? ARRAY_LEN / 32 : ARRAY_LEN / 32 + 1;
 const int SEED = 42;
 
