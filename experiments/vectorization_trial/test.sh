@@ -5,9 +5,9 @@ echo ""
 g++ main.cpp -O3 -o work
 ./work 0
 
-echo "march=native в g++"
+echo -e "\nmarch=native в g++"
 echo ""
-g++ main.cpp -O3 -march=native -DVEC_ON -o work
+g++ main.cpp -O3 -march=native -o work
 ./work 0
 
 rm -rf work

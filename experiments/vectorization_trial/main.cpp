@@ -344,40 +344,15 @@ int main(int argc, char** argv) {
     }
 
     if(test_number == -1) {
-        printf("Тест на синтетических данных\n");
         test_on_data<uint8_t>(nullptr);
         test_on_data<uint8_t>(simple<uint8_t>);
-        #ifdef VEC_ON
-        test_on_data<uint8_t>(no_pack_8);
-        #endif
     }
     else if(test_number == 0) {
-        printf("Тест без векторных инструкций:\n\n");
-        printf("uint8_t: %lfнс\n", measure_time<uint8_t>(simple<uint8_t>));
-        printf("uint16_t: %lfнс\n", measure_time<uint16_t>(simple<uint16_t>));
-        printf("uint32_t: %lfнс\n", measure_time<uint32_t>(simple<uint32_t>));
-        printf("uint64_t: %lfнс\n", measure_time<uint64_t>(simple<uint64_t>));
-
-        printf("\n\n");
-
-        #ifdef VEC_ON
-        printf("Тест без укаповки с векторными инструкциями. Слово 8 бит, ширина провода %d.\n\n", WIDTH);
-        printf("Среднее время: %lfнс\n", measure_time<uint8_t>(no_pack_8));
-        #endif
-    }
-    else if(test_number == 1) {
-        printf("Тест без векторных инструкций:\n\n");
         printf("uint8_t: %lfнс\n", measure_time<uint8_t>(simple<uint8_t>));
         printf("uint16_t: %lfнс\n", measure_time<uint16_t>(simple<uint16_t>));
         printf("uint32_t: %lfнс\n", measure_time<uint32_t>(simple<uint32_t>));
         printf("uint64_t: %lfнс\n", measure_time<uint64_t>(simple<uint64_t>));
     }
-    #ifdef VEC_ON
-    else if(test_number == 2) {
-        printf("Тест без укаповки с векторными инструкциями. Слово 8 бит, ширина провода %d.\n\n", WIDTH);
-        printf("Среднее время: %lfнс\n", measure_time<uint8_t>(no_pack_8));
-    }
-    #endif
     else {
         cout << "Плохой номер теста: " << test_number << endl;
         exit(-1);
