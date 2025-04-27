@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 authors:
-  - names: Kalachev Gleb
-           Iskhakov Daniil
+  - name: Kalachev Gleb
+  - name: Iskhakov Daniil
 title: "Code for Diploma"
 date-released: 2025-04-27
