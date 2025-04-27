@@ -207,3 +207,4 @@ python/gen_schedule/controller.bash
 bin/**
 lib/**
 venv/**
+bin/

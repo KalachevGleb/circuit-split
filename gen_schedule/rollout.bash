@@ -98,7 +98,7 @@ execution (){ # json_расписание название компилятор 
 
     if [ -z "$4" ] || [ ! -f "$4/$bin_name.json" ] || [ ! -f "$4/$bin_name" ]; then
         echo "Считаю с нуля"
-        ../../experiments/bin/simulation "$1" blob/work/ --compiler "${compiler}" -B --run --time 1
+        ../bin/simulation "$1" blob/work/ --compiler "${compiler}" -B --run --time 1
         cp "$1" "$bin_dir/${bin_name}.json"
         cp "blob/work/generated_code/bin/simulator" "$bin_dir/$bin_name"
     else
