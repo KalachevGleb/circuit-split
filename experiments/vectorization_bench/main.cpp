@@ -329,34 +329,11 @@ void test_on_data(JobFunc<T> f) {
 }
 
 int main(int argc, char** argv) {
-    if(argc == 1) {
-        printf("Ожидался номер теста\n");
-        exit(-1);
-    }
-
-    int test_number;
-    try {
-        test_number = std::atoi(argv[1]);
-    }
-    catch(...){
-        printf("Первым аргументом должен быть номер теста\n");
-        exit(-1);
-    }
-
-    if(test_number == -1) {
-        test_on_data<uint8_t>(nullptr);
-        test_on_data<uint8_t>(simple<uint8_t>);
-    }
-    else if(test_number == 0) {
-        printf("uint8_t: %lfнс\n", measure_time<uint8_t>(simple<uint8_t>));
-        printf("uint16_t: %lfнс\n", measure_time<uint16_t>(simple<uint16_t>));
-        printf("uint32_t: %lfнс\n", measure_time<uint32_t>(simple<uint32_t>));
-        printf("uint64_t: %lfнс\n", measure_time<uint64_t>(simple<uint64_t>));
-    }
-    else {
-        cout << "Плохой номер теста: " << test_number << endl;
-        exit(-1);
-    }
+    
+    printf("uint8_t: %lfнс\n", measure_time<uint8_t>(simple<uint8_t>));
+    printf("uint16_t: %lfнс\n", measure_time<uint16_t>(simple<uint16_t>));
+    printf("uint32_t: %lfнс\n", measure_time<uint32_t>(simple<uint32_t>));
+    printf("uint64_t: %lfнс\n", measure_time<uint64_t>(simple<uint64_t>));
 
     return 0;
 }

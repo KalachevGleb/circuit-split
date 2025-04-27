@@ -204,3 +204,5 @@ python/big_scheme_stats/*.pickle
 python/big_scheme_stats/*.pdf
 python/gen_schedule/controller.bash
 **/work
+bin/**
+lib/**
