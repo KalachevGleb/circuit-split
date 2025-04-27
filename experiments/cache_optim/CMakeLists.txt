@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 20)
 # =============================
 # Создание venv на этапе конфигурации
 # =============================
-set(VENV_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../venv")
+set(VENV_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../venv")
 
 # Найти системный Python3
 find_program(PYTHON3_EXECUTABLE python3)

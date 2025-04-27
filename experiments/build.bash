@@ -1,8 +1,6 @@
 #!/bin/bash
 
-rm -rf ../bin ../lib
-
-rm -rf build
+rm -rf ../bin ../lib ./build
 mkdir build
 cd build
 cmake ..
