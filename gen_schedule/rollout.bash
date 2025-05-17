@@ -22,7 +22,7 @@ fi
 ONLY_BUILD=0
 ENABLE_PERF=0
 ENABLE_SIMULATION=1
-N=20
+N=100
 
 thread_nums=(1 2 4)
 simple_widthes=(1024 2048 4096 8192 16384 32768 65536 131072)
@@ -332,23 +332,43 @@ elif [ "$1" == 'cache_size_600k' ]; then
         execution cut.json "cache_${mem}" "$default_compiler" "$last_bin_dir"
     done
 
-elif [ "$1" == 'cache_size_bitonic14' ]; then
+elif [ "$1" == 'cache_size_bitonic15' ]; then
 
-    python gen.py 1 1 0 ../graphs/bitonic14_th1.json cut.json --mode 1
+    python gen.py 1 1 0 ../gen_graphs/output/bitonic_sort_15_one_thread.json cut.json --mode 1
     execution cut.json stock "$default_compiler" "$last_bin_dir"
 
     for mem in "${mem_sizes[@]}"; do
-        python gen.py 1 1 0 ../graphs/bitonic14_th1.json cut.json --mode 5 --mem_size "${mem}"
+        python gen.py 1 1 0 ../gen_graphs/output/bitonic_sort_15_one_thread.json cut.json --mode 5 --mem_size "${mem}"
+        execution cut.json "cache_${mem}" "$default_compiler" "$last_bin_dir"
+    done
+
+elif [ "$1" == 'cache_size_bitonic11' ]; then
+
+    python gen.py 1 1 0 ../gen_graphs/output/bitonic_sort_11_one_thread.json cut.json --mode 1
+    execution cut.json stock "$default_compiler" "$last_bin_dir"
+
+    for mem in "${mem_sizes[@]}"; do
+        python gen.py 1 1 0 ../gen_graphs/output/bitonic_sort_11_one_thread.json cut.json --mode 5 --mem_size "${mem}"
+        execution cut.json "cache_${mem}" "$default_compiler" "$last_bin_dir"
+    done
+
+elif [ "$1" == 'cache_size_bitonic8' ]; then
+
+    python gen.py 1 1 0 ../gen_graphs/output/bitonic_sort_8_one_thread.json cut.json --mode 1
+    execution cut.json stock "$default_compiler" "$last_bin_dir"
+
+    for mem in "${mem_sizes[@]}"; do
+        python gen.py 1 1 0 ../gen_graphs/output/bitonic_sort_8_one_thread.json cut.json --mode 5 --mem_size "${mem}"
         execution cut.json "cache_${mem}" "$default_compiler" "$last_bin_dir"
     done
 
 elif [ "$1" == 'cache_size_simple' ]; then
 
-    python gen.py 1 1 0 .../graphs/simple_262144_20_th1.json cut.json --mode 1
+    python gen.py 1 1 0 ../gen_graphs/output/simple_circuit_n131072_d20_th1.json cut.json --mode 1
     execution cut.json stock "$default_compiler" "$last_bin_dir"
 
     for mem in "${mem_sizes[@]}"; do
-        python gen.py 1 1 0 ../graphs/simple_262144_20_th1.json --mode 5 --mem_size "${mem}"
+        python gen.py 1 1 0 ../gen_graphs/output/simple_circuit_n131072_d20_th1.json cut.json --mode 5 --mem_size "${mem}"
         execution cut.json "cache_${mem}" "$default_compiler" "$last_bin_dir"
     done
 

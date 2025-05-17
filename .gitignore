@@ -163,6 +163,7 @@ cython_debug/
 .vscode/
 gen_schedule/bin/
 gen_graphs/output/
+gen_schedule/blob
 bin/
 lib/
 venv/

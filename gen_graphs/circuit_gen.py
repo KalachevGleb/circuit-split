@@ -153,13 +153,13 @@ def main():
 
     #gen_simple_circuits([10],2,[1,2,4])
     # generate simple circuits
-    gen_simple_circuits([2**i for i in range(7, 19)], 5, [1, 2, 4])
-    gen_simple_circuits([2**i for i in range(7, 19)], 10, [1, 2, 4])
-    gen_simple_circuits([2**i for i in range(7, 19)], 15, [1, 2, 4])
-    gen_simple_circuits([2**i for i in range(7, 19)], 20, [1, 2, 4])
+    # gen_simple_circuits([2**i for i in range(7, 19)], 5, [1, 2, 4])
+    # gen_simple_circuits([2**i for i in range(7, 19)], 10, [1, 2, 4])
+    # gen_simple_circuits([2**i for i in range(7, 19)], 15, [1, 2, 4])
+    # gen_simple_circuits([2**i for i in range(7, 19)], 20, [1, 2, 4])
     #gen_simple_circuits([2 ** i for i in range(16, 21)], 2, [1, 2, 4])
 
-    for logn in range(1, 15):
+    for logn in range(16, 17):
         graph = BitonicSortGraph(logn)
         with open(f'output/bitonic_sort_{logn}.json', 'w') as f:
             json.dump(graph.graph(), f)
