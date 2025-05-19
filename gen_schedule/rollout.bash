@@ -24,9 +24,9 @@ ENABLE_PERF=0
 ENABLE_SIMULATION=1
 N=100
 
-thread_nums=(1 2 4)
-simple_widthes=(1024 2048 4096 8192 16384 32768 65536 131072)
-bitonic_widthes=(4 5 6 7 8 9 10 11 12 13 14)
+thread_nums=(1 2 3 4 5 6)
+simple_widthes=(32768 65536 131072)
+bitonic_widthes=(8 11 15)
 mem_sizes=(256 1024 4096 16384 65536 262144 1048576 4194304 16777216 67108864)
 
 last_dir () {
@@ -236,6 +236,18 @@ elif [ "$1" == 'bitonic' ]; then
         done
     done
 
+elif [ "$1" == 'bitonic_random' ]; then
+
+    for width in "${bitonic_widthes[@]}"; do
+        echo $width
+        execution ../gen_graphs/output/bitonic_sort_${width}_one_thread.json 1_stock "$default_compiler" "$last_bin_dir"
+        
+        for threads in "${thread_nums[@]}"; do
+            python gen.py ${threads} 0 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 6
+            execution cut.json ${threads}_random "$default_compiler" "$last_bin_dir"
+        done
+    done
+
 elif [ "$1" == 'simple' ]; then
 
     depth="$2"
@@ -250,6 +262,23 @@ elif [ "$1" == 'simple' ]; then
             
             python gen.py ${threads} 1 0 ../gen_graphs/output/simple_circuit_n${width}_d${depth}_th${threads}.json cut.json --mode 3 --shuffle_layers False --inside_layer_schedule backpack
             execution cut.json simpled${depth}_${threads}_depth "$default_compiler" "$last_bin_dir" "$width"
+        done
+    done
+
+elif [ "$1" == 'simple_random' ]; then
+
+    depth="$2"
+    if [ $depth != 5 ] && [ $depth != 10 ] && [ $depth != 15 ] && [ $depth != 20 ]; then
+        echo "Плохое depth"
+        exit 1
+    fi
+
+    for width in "${simple_widthes[@]}"; do
+        for threads in "${thread_nums[@]}"; do
+            execution ../gen_graphs/output/simple_circuit_n${width}_d${depth}_th${threads}.json simpled${depth}_${threads}_stock "$default_compiler" "$last_bin_dir" "$width"
+            
+            python gen.py ${threads} 1 0 ../gen_graphs/output/simple_circuit_n${width}_d${depth}_th${threads}.json cut.json --mode 6
+            execution cut.json simpled${depth}_${threads}_random "$default_compiler" "$last_bin_dir" "$width"
         done
     done
 

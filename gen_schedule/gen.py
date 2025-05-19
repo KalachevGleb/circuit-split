@@ -71,6 +71,12 @@ def cut_graph_greedy(graph, turn2vertex_id):
 
     return cost_greedy
 
+def cut_graph_random(graph, turn2vertex_id):
+    for vertex_id in tqdm_friendly(turn2vertex_id):
+        graph.vs[vertex_id]['p'] = np.random.randint(0, THREAD_COUNT)
+
+    return [0] * THREAD_COUNT
+
 def cut_graph_depth(graph):
     layers = [set([vertex.index for vertex in graph.vs if vertex.neighbors(mode='in') == []])]
 
@@ -431,6 +437,12 @@ def main():
             schedule.append(layer.step())
 
         memory_order = list(range(nc))
+    elif MODE == 6:
+        heaviness = cut_graph_random(graph=graph, turn2vertex_id=turn2vertex_id)
+
+        memory_order = list(range(len(graph.vs)))
+
+        cost = np.amax(heaviness)
     else:
         print_freindly('Неизвестный MODE:', MODE)
         quit(1)
@@ -442,7 +454,7 @@ def main():
     #
 
     print_freindly('Проверяю расписание')
-    if MODE in [1, 2]:
+    if MODE in [1, 2, 6]:
         if len(turn2vertex_id) != len(set(turn2vertex_id)):
             print_freindly('В построенном расписании есть повторяющиеся вершины')
             quit(2)
@@ -466,7 +478,7 @@ def main():
     #
     #
     
-    if MODE in [1, 2]:
+    if MODE in [1, 2, 6]:
         print_freindly('Стоимость:', heaviness)
         print_freindly('Overhead:', str(sum(heaviness) - single_thread_time))
         print_freindly('Выгода: ' + str(round(100 * (single_thread_time - cost) / single_thread_time, 3)) + '%')
@@ -508,7 +520,7 @@ def main():
 
     print_freindly('Преобразую расписание к стандартному виду')
 
-    if MODE in [1, 2]:
+    if MODE in [1, 2, 6]:
         schedule = [[] for _ in range(THREAD_COUNT)]
         sync_points = []
         for vertex_id in turn2vertex_id:
@@ -526,6 +538,8 @@ def main():
                     schedule[thread].append([1, len(sync_points) - 1])
             
             schedule[curr_thread].append([0, int(vertex_id)])
+
+        print_freindly(f'Исполльзовано {len(sync_points)} синхронизаций')
     elif MODE == 3:
         schedule = [[] for _ in range(THREAD_COUNT)]
         sync_points = []
@@ -600,7 +614,7 @@ if __name__ == '__main__':
                         help='Режим распределения вершин в слое послойного расписания')
     parser.add_argument('--mode',
                         type=int,
-                        choices=[1, 2, 3, 4, 5],
+                        choices=[1, 2, 3, 4, 5, 6],
                         default=3,
                         help='Выбор алгоритма построения расписания')
     parser.add_argument('--survive_depth',
