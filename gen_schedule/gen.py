@@ -539,7 +539,7 @@ def main():
             
             schedule[curr_thread].append([0, int(vertex_id)])
 
-        print_freindly(f'Исполльзовано {len(sync_points)} синхронизаций')
+    # print_freindly(f'Исполльзовано {len(sync_points)} синхронизаций')
     elif MODE == 3:
         schedule = [[] for _ in range(THREAD_COUNT)]
         sync_points = []
