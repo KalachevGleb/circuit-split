@@ -25,7 +25,7 @@ ENABLE_SIMULATION=1
 N=100
 
 thread_nums=(1 2 3 4 5 6)
-simple_widthes=(16384 32768 65536 131072)
+simple_widthes=(131072)
 bitonic_widthes=(8 11 15)
 mem_sizes=(256 1024 4096 16384 65536 262144 1048576 4194304 16777216 67108864)
 
@@ -243,17 +243,23 @@ elif [ "$1" == 'bitonic_stock' ]; then
         execution ../gen_graphs/output/bitonic_sort_${width}_one_thread.json bitonic_${width}_stock "$default_compiler" "$last_bin_dir"
     done
 
-# elif [ "$1" == 'bitonic_random' ]; then
+elif [ "$1" == 'random' ]; then
 
-#     for width in "${bitonic_widthes[@]}"; do
-#         # echo $width
-#         # execution ../gen_graphs/output/bitonic_sort_${width}_one_thread.json 1_stock "$default_compiler" "$last_bin_dir"
-        
-#         for threads in "${thread_nums[@]}"; do
-#             python gen.py ${threads} 0 0 ../gen_graphs/output/bitonic_sort_${width}.json cut.json --mode 6
-#             execution cut.json bitonic_${width}_th_${threads}_random "$default_compiler" "$last_bin_dir"
-#         done
-#     done
+    depth="$2"
+    if [ $depth != 5 ] && [ $depth != 10 ] && [ $depth != 15 ] && [ $depth != 20 ]; then
+        echo "Плохое depth"
+        exit 1
+    fi
+
+    for width in "${bitonic_widthes[@]}"; do
+        python gen.py 1 0 0 ../gen_graphs/output/bitonic_sort_${width}_one_thread.json cut.json --mode 6
+        execution cut.json bitonic_random_${width} "$default_compiler" "$last_bin_dir"
+    done
+
+    for width in "${simple_widthes[@]}"; do
+        python gen.py 1 0 0 ../gen_graphs/output/simple_circuit_n${width}_d${depth}_th1.json cut.json --mode 6
+        execution cut.json simpled_random_d${depth}_w${width} "$default_compiler" "$last_bin_dir" "$width"
+    done
 
 elif [ "$1" == 'simple' ]; then
 
@@ -271,23 +277,6 @@ elif [ "$1" == 'simple' ]; then
             execution cut.json simpled${depth}_th_${threads}_depth "$default_compiler" "$last_bin_dir" "$width"
         done
     done
-
-# elif [ "$1" == 'simple_random' ]; then
-
-#     depth="$2"
-#     if [ $depth != 5 ] && [ $depth != 10 ] && [ $depth != 15 ] && [ $depth != 20 ]; then
-#         echo "Плохое depth"
-#         exit 1
-#     fi
-
-#     for width in "${simple_widthes[@]}"; do
-#         for threads in "${thread_nums[@]}"; do
-#             execution ../gen_graphs/output/simple_circuit_n${width}_d${depth}_th${threads}.json simpled${depth}_${threads}_stock "$default_compiler" "$last_bin_dir" "$width"
-            
-#             python gen.py ${threads} 1 0 ../gen_graphs/output/simple_circuit_n${width}_d${depth}_th${threads}.json cut.json --mode 6
-#             execution cut.json simpled${depth}_th_${threads}_random "$default_compiler" "$last_bin_dir" "$width"
-#         done
-#     done
 
 elif [ "$1" == 'simpled20' ]; then
 
