@@ -87,61 +87,71 @@ rel_speedup_bitonic11 = [stock_bitonic11/val for val in values_bitonic11]
 rel_speedup_bitonic15 = [stock_bitonic15/val for val in values_bitonic15]
 rel_speedup_simple = [stock_simple/val for val in values_simple]
 
-plt.plot(sizes_bitonic8, rel_speedup_bitonic8, 'o-', label='Битонический граф ширины 2^8', linewidth=2)
-plt.plot(sizes_bitonic11, rel_speedup_bitonic11, 's-', label='Битонический граф ширины 2^11', linewidth=2)
-plt.plot(sizes_bitonic15, rel_speedup_bitonic15, '^-', label='Битонический граф ширины 2^15', linewidth=2)
-plt.plot(sizes_simple, rel_speedup_simple, 'D-', label='Сдвинутый граф', linewidth=2)
+plt.plot(sizes_bitonic8, rel_speedup_bitonic8, 'o-', label=r'$BI(8)$', linewidth=2)
+plt.plot(sizes_bitonic11, rel_speedup_bitonic11, 's-', label=r'$BI(11)$', linewidth=2)
+plt.plot(sizes_bitonic15, rel_speedup_bitonic15, '^-', label=r'$BI(15)$', linewidth=2)
+plt.plot(sizes_simple, rel_speedup_simple, 'D-', label=r'$SH(20,17)$', linewidth=2)
 
-plt.axhline(y=1.0, linestyle='-', color='gray', alpha=0.7, label='Без ускорения (стандартная реализация)')
+plt.axhline(y=1.0, linestyle='-', color='gray', alpha=0.7, label='Стандартное расписание')
 plt.xscale('log', base=2)
 plt.grid(True, which="both", ls="-", alpha=0.2)
-plt.xlabel('Размер кэша (байт)')
-plt.ylabel('Множитель ускорения')
-plt.title('Относительное ускорение за счет симуляции кэша')
+plt.xlabel('Объем кэша')
+plt.ylabel('Ускорение')
+plt.title('Ускорение за счет симуляции кэша')
 plt.legend(loc='best')
 plt.tight_layout()
-plt.savefig('relative_speedup.png', dpi=300)
+plt.savefig('cache_relative_speedup.png', dpi=300)
 
 # Создание гистограммы для сравнения оптимальных случаев с базовыми
-plt.figure(figsize=(12, 8))
-optimal_bitonic8 = min(values_bitonic8)
+optimal_bitonic8  = min(values_bitonic8)
 optimal_bitonic11 = min(values_bitonic11)
 optimal_bitonic15 = min(values_bitonic15)
-optimal_simple = min(values_simple)
+optimal_simple    = min(values_simple)
 
-graph_types = ['Бит. граф ширины 2^8', 'Бит. граф ширины 2^11', 'Бит. граф ширины 2^15', 'Сдвинутый граф']
-optimal_values = [optimal_bitonic8, optimal_bitonic11, optimal_bitonic15, optimal_simple]
-stock_values = [stock_bitonic8, stock_bitonic11, stock_bitonic15, stock_simple]
-x = np.arange(len(graph_types))
-width = 0.35
+graph_types     = [r'$BI(8)$', r'$BI(11)$', r'$BI(15)$', r'$SH(20,17)$']
+optimal_values  = [optimal_bitonic8, optimal_bitonic11, optimal_bitonic15, optimal_simple]
+stock_values    = [stock_bitonic8,  stock_bitonic11,  stock_bitonic15,  stock_simple]
+random_values   = [0.55344316, 0.36297393, 1.5058985, 1.6356773]
+
+x     = np.arange(len(graph_types))
+width = 0.25          # теперь три столбца → чуть уже
 
 fig, ax = plt.subplots(figsize=(14, 8))
-rects1 = ax.bar(x - width/2, optimal_values, width, label='Оптимизированная версия (лучший кэш)')
-rects2 = ax.bar(x + width/2, stock_values, width, label='Стандартная реализация')
 
+# три набора столбцов
+rects1 = ax.bar(x - width,      optimal_values, width, label='Оптимизированная версия (лучший кэш)')
+rects2 = ax.bar(x,              stock_values,   width, label='Стандартная реализация')
+rects3 = ax.bar(x + width,      random_values,  width, label='Случайное расписание', color='green')
+
+# подпись прироста для оптимизированной версии относительно стандартной
 for i in range(len(graph_types)):
     improvement = (stock_values[i] - optimal_values[i]) / stock_values[i] * 100
-    ax.text(i, optimal_values[i]/2, f'{improvement:.1f}%', ha='center', va='center', fontsize=FONT_SIZE)
+    ax.text(i - width, optimal_values[i] / 2, f'{improvement:.1f}%',  # ставим над первым столбцом
+            ha='center', va='center', fontsize=FONT_SIZE)
 
-ax.set_ylabel('Время доступа (нс)')
-ax.set_title('Сравнение оптимальных кэш-оптимизированных и стандартных расписаний')
+ax.set_ylabel('Среднее время чтения (нс)')
+ax.set_title('Сравнение оптимальных кэш-оптимизированных, стандартных и случайных расписаний')
 ax.set_xticks(x)
 ax.set_xticklabels(graph_types)
 ax.legend()
 
 def autolabel(rects):
+    """Отображает числовые значения поверх столбцов."""
     for rect in rects:
         height = rect.get_height()
         ax.annotate(f'{height:.3f}',
-                    xy=(rect.get_x() + rect.get_width() / 2, height),
-                    xytext=(0, 3),
-                    textcoords="offset points",
+                    xy=(rect.get_x() + rect.get_width()/2, height),
+                    xytext=(0, 3), textcoords="offset points",
                     ha='center', va='bottom', fontsize=FONT_SIZE)
 
+# подписи всех трёх наборов
 autolabel(rects1)
 autolabel(rects2)
+autolabel(rects3)
+
 fig.tight_layout()
-plt.savefig('comparsion_histogram.png', dpi=300)
+plt.savefig('cache_absolute_speedup.png', dpi=300)
+plt.show()
 
 # Показать все графики
 # plt.show()

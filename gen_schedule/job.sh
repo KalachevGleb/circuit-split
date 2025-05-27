@@ -1,4 +1,4 @@
 #!/bin/bash
 
-bash rollout.bash bitonic_random
-bash rollout.bash simple_random 20
+bash rollout.bash bitonic
+bash rollout.bash simple 20

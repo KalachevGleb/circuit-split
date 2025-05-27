@@ -29,16 +29,18 @@ simple_data = {
 
 # Количество ядер
 cores = [1, 2, 3, 4, 5, 6]
-markers = ['o', 's', '^', 'D', 'v', '<']
 colors = {
     '8': 'blue',
     '11': 'green',
     '15': 'red',
-    'simple': 'purple'
+    'simple': 'purple',
+    'stock': 'orange',
+    'random': 'brown'
 }
 linestyles = {
     'depth': '-',
-    'stock': '--'
+    'stock': '--',
+    'random': '-.'
 }
 
 def plot_absolute_times():
@@ -51,14 +53,14 @@ def plot_absolute_times():
     # График для Simple-графа
     ax.plot(cores, simple_data["depth"], marker='o', color=colors["simple"], 
              linestyle=linestyles["depth"], label='Послойное')
-    ax.plot(cores, simple_data["stock"], marker='x', color=colors["simple"], 
-             linestyle=linestyles["stock"], label='Простое')
-    
-    ax.set_title('Время чтения для сдвинутого-графа', fontsize=FONT_SIZE)
+    ax.plot(cores, simple_data["stock"], marker='x', color=colors["stock"], 
+             linestyle=linestyles["stock"], label='Построенное вручную')
+
+    ax.set_title('Время чтения для сдвинутого графа', fontsize=FONT_SIZE)
     ax.set_xlabel('Количество ядер', fontsize=FONT_SIZE)
     ax.set_ylabel('Время чтения (нс)', fontsize=FONT_SIZE)
     ax.grid(True, linestyle='--', alpha=0.7)
-    ax.legend(fontsize=FONT_SIZE)
+    ax.legend(title='Расписание', fontsize=FONT_SIZE)
     
     plt.tight_layout()
     plt.savefig('absolute_time_simple.png', dpi=300)
@@ -75,7 +77,7 @@ def plot_ratio():
     for size in bitonic_data:
         # Расчет отношения stock/depth
         ratio = [s / d for s, d in zip(bitonic_data[size]["stock"], bitonic_data[size]["depth"])]
-        ax.plot(cores, ratio, marker='o', color=colors[size], label=f'Битонический граф ширины {size}')
+        ax.plot(cores, ratio, marker='o', color=colors[size], label=r'Битонический граф ширины $2^{'+str(size)+r'}$')          
     
     # Горизонтальная линия на уровне 1 (stock = depth)
     ax.axhline(y=1, color='k', linestyle='--', alpha=0.5)

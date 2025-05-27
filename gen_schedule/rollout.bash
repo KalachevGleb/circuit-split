@@ -27,7 +27,7 @@ N=100
 thread_nums=(1 2 3 4 5 6)
 simple_widthes=(131072)
 bitonic_widthes=(8 11 15)
-mem_sizes=(256 1024 4096 16384 65536 262144 1048576 4194304 16777216 67108864)
+mem_sizes=(256 1024 4096 16384 65536 262144 )
 
 last_dir () {
     name="$1"
@@ -251,10 +251,10 @@ elif [ "$1" == 'random' ]; then
         exit 1
     fi
 
-    for width in "${bitonic_widthes[@]}"; do
-        python gen.py 1 0 0 ../gen_graphs/output/bitonic_sort_${width}_one_thread.json cut.json --mode 6
-        execution cut.json bitonic_random_${width} "$default_compiler" "$last_bin_dir"
-    done
+    # for width in "${bitonic_widthes[@]}"; do
+    #     python gen.py 1 0 0 ../gen_graphs/output/bitonic_sort_${width}_one_thread.json cut.json --mode 6
+    #     execution cut.json bitonic_random_${width} "$default_compiler" "$last_bin_dir"
+    # done
 
     for width in "${simple_widthes[@]}"; do
         python gen.py 1 0 0 ../gen_graphs/output/simple_circuit_n${width}_d${depth}_th1.json cut.json --mode 6
